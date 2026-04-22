@@ -7,8 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="DTO\" />
-    <Folder Include="Interfaces\Services\" />
     <Folder Include="SearchFilter\" />
   </ItemGroup>
 
