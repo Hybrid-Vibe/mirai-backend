@@ -13,11 +13,13 @@ namespace Mirai.Infastructure.Repositories
 
         public IUserRepository UserRepository { get; }
 
+        public IAddressRepository AddressRepository { get; }
 
         public UnitOfWork(AppDbContext context)
         {
             _context = context;
             UserRepository = new UserRepository(_context);
+            AddressRepository = new AddressRepository(_context);
         }
 
         public async Task<int> SaveChangesAsync()
