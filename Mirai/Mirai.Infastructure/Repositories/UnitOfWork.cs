@@ -1,14 +1,15 @@
-﻿/*using SportsBicycleStore.Application.Interfaces.Repositories;
-using SportsBicycleStore.Infastructure.Data;
+﻿using Mirai.Application.Interfaces.Repositories;
+using Mirai.Infastructure.Data;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace SportsBicycleStore.Infastructure.Repositories
+namespace Mirai.Infastructure.Repositories
 {
     public class UnitOfWork : IUnitOfWork
     {
         private readonly AppDbContext _context;
+
 
         public IUserRepository UserRepository { get; }
 
@@ -27,7 +28,6 @@ namespace SportsBicycleStore.Infastructure.Repositories
         public void Dispose()
         {
             _context.Dispose();
-        }
+       }
     }
 }
-*/
