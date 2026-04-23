@@ -13,5 +13,6 @@ namespace Mirai.Application.Interfaces.Repositories
         ICategoryRepository CategoryRepository { get; }
         IProductRepository ProductRepository { get; }
         IProductVariantRepository ProductVariantRepository { get; }
+        IProductImageRepository ProductImageRepository { get; }
     }
 }
