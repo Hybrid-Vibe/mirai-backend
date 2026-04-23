@@ -23,6 +23,8 @@ namespace Mirai.Infastructure.Repositories
 
         public IProductVariantRepository ProductVariantRepository { get; }
 
+        public IProductImageRepository ProductImageRepository { get; }
+
         public UnitOfWork(AppDbContext context)
         {
             _context = context;
@@ -32,6 +34,7 @@ namespace Mirai.Infastructure.Repositories
             CategoryRepository = new CategoryRepository(_context);
             ProductRepository = new ProductRepository(_context); 
             ProductVariantRepository = new ProductVariantRepository(_context);
+            ProductImageRepository = new ProductImageRepository(_context);
         }
 
         public async Task<int> SaveChangesAsync()

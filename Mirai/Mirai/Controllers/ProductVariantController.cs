@@ -26,6 +26,12 @@ namespace Mirai.Controllers
             return Ok(productVariant);
         }
 
+        [HttpPost("Create-ProductVariant")]
+        public async Task<IActionResult> CreateProductVariant([FromBody] CreateProductVariantDto createProductVariantDto)
+        {
+            var createdProductVariant = await _productVariantService.CreateProductVariant(createProductVariantDto);
+            return Ok(createdProductVariant);
+        }
         [HttpPut("Update-ProductVariant/{productVariantId}")]
         public async Task<IActionResult> UpdateProductVariant(string productVariantId, [FromBody] CreateProductVariantDto createProductVariantDto)
         {
@@ -38,11 +44,5 @@ namespace Mirai.Controllers
             return Ok(updatedProductVariant);
         }
 
-        [HttpPut("Create-ProductVariant")]
-        public async Task<IActionResult> CreateProductVariant([FromBody] CreateProductVariantDto createProductVariantDto)
-        {
-            var createdProductVariant = await _productVariantService.CreateProductVariant(createProductVariantDto);
-            return Ok(createdProductVariant);
-        }
     }
 }
