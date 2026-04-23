@@ -9,5 +9,6 @@ namespace Mirai.Application.Interfaces.Repositories
         Task<int> SaveChangesAsync();
         IUserRepository UserRepository { get; }
         IAddressRepository AddressRepository { get; }
+        IBrandRepository BrandRepository { get; }
     }
 }
