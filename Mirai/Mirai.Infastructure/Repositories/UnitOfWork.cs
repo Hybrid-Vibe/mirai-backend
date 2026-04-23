@@ -17,12 +17,15 @@ namespace Mirai.Infastructure.Repositories
 
         public IBrandRepository BrandRepository { get; }
 
+        public ICategoryRepository CategoryRepository { get; }
+
         public UnitOfWork(AppDbContext context)
         {
             _context = context;
             UserRepository = new UserRepository(_context);
             AddressRepository = new AddressRepository(_context);
             BrandRepository = new BrandRepository(_context);
+            CategoryRepository = new CategoryRepository(_context);
         }
 
         public async Task<int> SaveChangesAsync()
