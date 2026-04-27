@@ -25,6 +25,10 @@ namespace Mirai.Infastructure.Repositories
 
         public IProductImageRepository ProductImageRepository { get; }
 
+        public IOrderRepository OrderRepository {  get; }
+
+        public IPaymentRepository PaymentRepository { get; }
+
         public UnitOfWork(AppDbContext context)
         {
             _context = context;
@@ -35,6 +39,8 @@ namespace Mirai.Infastructure.Repositories
             ProductRepository = new ProductRepository(_context); 
             ProductVariantRepository = new ProductVariantRepository(_context);
             ProductImageRepository = new ProductImageRepository(_context);
+            OrderRepository = new OrderRepository(_context);
+            PaymentRepository = new PaymentRepository(_context);
         }
 
         public async Task<int> SaveChangesAsync()
