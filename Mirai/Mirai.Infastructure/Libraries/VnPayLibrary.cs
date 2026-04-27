@@ -1,5 +1,5 @@
-﻿/*using Microsoft.AspNetCore.Http;
-using SportsBicycleStore.Application.DTO;
+﻿using Microsoft.AspNetCore.Http;
+using Mirai.Application.DTO;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
@@ -193,5 +193,3 @@ public class VnPayCompare : IComparer<string>
     }
 }
 
-
-*/
