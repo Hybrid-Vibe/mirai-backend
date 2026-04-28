@@ -1,9 +1,10 @@
-﻿using Mirai.Domain.Entities;
+﻿using Microsoft.AspNetCore.Http;
 using Mirai.Application.DTO;
+using Mirai.Domain.Entities;
+using Mirai.Domain.Enum;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.AspNetCore.Http;
 
 namespace Mirai.Application.Interfaces.Services
 {
@@ -11,5 +12,8 @@ namespace Mirai.Application.Interfaces.Services
     {
         Task<string> CreatePaymentUrl(PaymentInformationModel model, HttpContext context);
         Task<PaymentResponseModel> PaymentExecute(IQueryCollection collections);
+        Task UpdatePaymentStatus(string orderId, PaymentStatusInPayment newStatus);
+        Task<Payment> CreatePaymentByCOD(PaymentByCODDto paymentByCODDto);
+        Task<Payment> GetByIdAsync(string id);
     }
 }
