@@ -4,9 +4,10 @@ using System.Text;
 
 namespace Mirai.Application.DTO
 {
-    public class PaymentInformationModel
+    public class PaymentByCODDto
     {
         public string? OrderId { get; set; }
-        public decimal Amount { get; set; }
+
+        public decimal? Amount { get; set; }
     }
 }

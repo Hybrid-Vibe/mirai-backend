@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Mirai.Application.DTO;
 using Mirai.Application.Interfaces.Repositories;
 using Mirai.Application.Interfaces.Services;
+using Mirai.Domain.Entities;
 using Mirai.Domain.Enum;
 using SportsBicycleStore.Libraries;
 using System;
@@ -19,6 +20,11 @@ namespace Mirai.Infastructure.Services
         {
             _configuration = configuration;
             _unitOfWork = unitOfWork;
+        }
+
+        public async Task<Payment> CreatePaymentByCOD(PaymentByCODDto paymentByCODDto)
+        {
+            return await _unitOfWork.PaymentRepository.CreatePaymentByCOD(paymentByCODDto);
         }
 
         public async Task<string> CreatePaymentUrl(PaymentInformationModel model, HttpContext context)
@@ -43,7 +49,7 @@ namespace Mirai.Infastructure.Services
             pay.AddRequestData("vnp_CurrCode", _configuration["Vnpay:CurrCode"]);
             pay.AddRequestData("vnp_IpAddr", pay.GetIpAddress(context));
             pay.AddRequestData("vnp_Locale", _configuration["Vnpay:Locale"]);
-            pay.AddRequestData("vnp_OrderInfo", $"{model.FullName};{model.Description};{model.Amount}");
+            pay.AddRequestData("vnp_OrderInfo", $"{model.Amount}");
             pay.AddRequestData("vnp_OrderType", "other");
             pay.AddRequestData("vnp_ReturnUrl", _configuration["Vnpay:PaymentBackReturnUrl"]);
             pay.AddRequestData("vnp_TxnRef", order.OrderId);
@@ -54,13 +60,17 @@ namespace Mirai.Infastructure.Services
             return paymentUrl;
         }
 
+        public async Task<Payment> GetByIdAsync(string id)
+        {
+            return await _unitOfWork.PaymentRepository.GetByIdAsync(id);
+        }
+
         public async Task<PaymentResponseModel> PaymentExecute(IQueryCollection collections)
         {
             try
             {
                 var vnpay = new VnPayLibrary();
 
-                // FIX 1: loại SecureHash + SecureHashType (QUAN TRỌNG)
                 foreach (var (key, value) in collections)
                 {
                     if (!string.IsNullOrEmpty(key)
@@ -74,7 +84,6 @@ namespace Mirai.Infastructure.Services
 
                 var vnp_SecureHash = collections["vnp_SecureHash"];
 
-                // FIX 2: validate signature đúng cách
                 bool checkSignature = vnpay.ValidateSignature(
                     vnp_SecureHash,
                     _configuration["Vnpay:HashSecret"]
@@ -89,22 +98,21 @@ namespace Mirai.Infastructure.Services
                     };
                 }
 
-                // FIX 3: lấy đúng field VNPay trả về
                 var vnp_Amount = Convert.ToInt64(vnpay.GetResponseData("vnp_Amount")) / 100;
                 var vnp_TransactionId = vnpay.GetResponseData("vnp_TransactionNo");
                 var vnp_ResponseCode = vnpay.GetResponseData("vnp_ResponseCode");
 
-                // FIX 4: VNPay dùng vnp_TxnRef là OrderId (KHÔNG phải response.OrderId)
                 var orderId = vnpay.GetResponseData("vnp_TxnRef");
 
+                var paymentDto = new PaymentDto
+                {
+                    OrderId = orderId,
+                    Amount = vnp_Amount,
+                    TransactionId = vnp_TransactionId,
+                    
+                };
                 if (vnp_ResponseCode == "00")
                 {
-                    var paymentDto = new PaymentDto
-                    {
-                        OrderId = orderId,
-                        Amount = vnp_Amount,
-                        TransactionId = vnp_TransactionId
-                    };
 
                     // Save payment
                     await _unitOfWork.PaymentRepository.CreatePaymentByVNPay(paymentDto);
@@ -120,6 +128,8 @@ namespace Mirai.Infastructure.Services
                         PaymentStatus.Paid
                     );
 
+                    await _unitOfWork.PaymentRepository.UpdatePaymentStatus(orderId, PaymentStatusInPayment.Succeed);
+
                     return new PaymentResponseModel
                     {
                         Success = vnp_ResponseCode == "00",
@@ -131,6 +141,14 @@ namespace Mirai.Infastructure.Services
                     };
                 }
 
+                await _unitOfWork.PaymentRepository.CreatePaymentByVNPay(paymentDto);
+
+                await _unitOfWork.OrderRepository.UpdatePaymentStatus(
+                    orderId,
+                    PaymentStatus.Failed
+                );
+
+                await _unitOfWork.PaymentRepository.UpdatePaymentStatus(orderId, PaymentStatusInPayment.Failed);
 
                 return new PaymentResponseModel
                 {
@@ -144,12 +162,13 @@ namespace Mirai.Infastructure.Services
             }
             catch (Exception ex)
             {
-                return new PaymentResponseModel
-                {
-                    Success = false,
-                    Message = ex.Message
-                };
+                return new PaymentResponseModel { Success = false, Message = ex.Message };
             }
+        }
+
+        public async Task UpdatePaymentStatus(string orderId, PaymentStatusInPayment newStatus)
+        {
+            await _unitOfWork.PaymentRepository.UpdatePaymentStatus(orderId, newStatus);
         }
     }
 }
