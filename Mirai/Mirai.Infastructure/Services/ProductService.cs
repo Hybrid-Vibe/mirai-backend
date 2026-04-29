@@ -1,6 +1,8 @@
 ﻿using Mirai.Application.DTO;
+using Mirai.Application.Extension;
 using Mirai.Application.Interfaces.Repositories;
 using Mirai.Application.Interfaces.Services;
+using Mirai.Application.SearchFilter;
 using Mirai.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -34,6 +36,11 @@ namespace Mirai.Infastructure.Services
                 return null;
             }
             return product;
+        }
+
+        public async Task<PagedResult<GetAllProductsByFilterDto>> GetProductsByFilterAsync(ProductSearchFilter filter)
+        {
+            return await _unitOfWork.ProductRepository.GetProductsByFilterAsync(filter);
         }
 
         public async Task<Product> UpdateProduct(string productId, CreateProductDto createProductDto)

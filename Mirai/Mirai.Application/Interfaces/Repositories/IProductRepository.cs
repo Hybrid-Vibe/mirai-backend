@@ -1,7 +1,10 @@
 ﻿using Mirai.Application.DTO;
+using Mirai.Application.Extension;
+using Mirai.Application.SearchFilter;
 using Mirai.Domain.Entities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Text;
 
 namespace Mirai.Application.Interfaces.Repositories
@@ -12,5 +15,6 @@ namespace Mirai.Application.Interfaces.Repositories
         Task<Product> UpdateProduct(string productId, CreateProductDto createProductDto);
         Task<Product?> GetProductById(string productId);
         Task<List<ProductDto>> GetAllProducts();
+        Task<PagedResult<GetAllProductsByFilterDto>> GetProductsByFilterAsync(ProductSearchFilter filter);
     }
 }

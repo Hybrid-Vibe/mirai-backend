@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Mirai.Application.DTO;
 using Mirai.Application.Interfaces.Services;
+using Mirai.Application.SearchFilter;
 
 namespace Mirai.Controllers
 {
@@ -48,6 +49,13 @@ namespace Mirai.Controllers
                 return NotFound($"Product not found by ID: {productId}");
             }
             return Ok(product);
+        }
+
+        [HttpGet("Get-Products-By-Filter")]
+        public async Task<IActionResult> GetProductsByFilter([FromQuery] ProductSearchFilter filter)
+        {
+            var products = await _productService.GetProductsByFilterAsync(filter);
+            return Ok(products);
         }
     }
 }
