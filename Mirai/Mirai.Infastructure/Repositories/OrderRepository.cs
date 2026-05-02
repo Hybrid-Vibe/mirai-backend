@@ -39,11 +39,19 @@ namespace Mirai.Infastructure.Repositories
                     PlacedAt = DateTime.Now
                 };
                 var orderItems = new List<OrderItem>();
-                foreach(var item in orderRequestDto.Products)
+
+                var variantIds = orderRequestDto.Products.Select(p => p.VariantId).ToList();
+
+                var variants = await _context.ProductVariants
+                    .Include(v => v.Product)
+                    .Where(v => variantIds.Contains(v.VariantId))
+                    .ToDictionaryAsync(v => v.VariantId);
+
+                foreach (var item in orderRequestDto.Products)
                 {
-                    var variant = await _context.ProductVariants.Include(p => p.Product).FirstOrDefaultAsync(v => v.VariantId == item.VariantId);
-                    if (variant == null)
+                    if (!variants.TryGetValue(item.VariantId, out var variant))
                         throw new Exception($"Variant {item.VariantId} not found");
+
 
                     if (item.Quantity <= 0)
                         throw new Exception("Quantity must be > 0");
