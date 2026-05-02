@@ -29,6 +29,8 @@ namespace Mirai.Infastructure.Repositories
 
         public IPaymentRepository PaymentRepository { get; }
 
+        public ICartItemsRepository CartItemsRepository { get; }
+
         public UnitOfWork(AppDbContext context)
         {
             _context = context;
@@ -41,6 +43,7 @@ namespace Mirai.Infastructure.Repositories
             ProductImageRepository = new ProductImageRepository(_context);
             OrderRepository = new OrderRepository(_context);
             PaymentRepository = new PaymentRepository(_context);
+            CartItemsRepository = new CartItemsRepository(_context);
         }
 
         public async Task<int> SaveChangesAsync()

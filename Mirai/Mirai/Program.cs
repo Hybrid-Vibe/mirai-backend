@@ -97,7 +97,7 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
-
+app.UseCors("AllowAll");
 app.UseStaticFiles();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
