@@ -1,6 +1,8 @@
 ﻿using Mirai.Application.DTO;
+using Mirai.Application.Extension;
 using Mirai.Application.Interfaces.Repositories;
 using Mirai.Application.Interfaces.Services;
+using Mirai.Application.SearchFilter;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -51,6 +53,11 @@ namespace Mirai.Infastructure.Services
                 return null;
             }
                 return await _unitOfWork.CartItemsRepository.CreateCartDtoAsync(createCartDto);
+        }
+
+        public async Task<PagedResult<CartDto>> GetCartById(CartSearchFilter filter)
+        {
+            return await _unitOfWork.CartItemsRepository.GetCartById(filter);
         }
     }
 }

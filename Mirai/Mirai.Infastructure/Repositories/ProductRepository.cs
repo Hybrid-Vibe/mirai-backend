@@ -126,7 +126,7 @@ namespace Mirai.Infastructure.Repositories
             {
                 query = query.Where(u => u.BrandName.Contains(filter.BrandName));
             }
-            if (!string.IsNullOrEmpty(filter.VariantId))
+            /*if (!string.IsNullOrEmpty(filter.VariantId))
             {
                 query = query.Where(u => u.Variants.Any(v => v.VariantId.Contains(filter.VariantId)));
             }
@@ -146,13 +146,13 @@ namespace Mirai.Infastructure.Repositories
             {
                 query = query.Where(u => u.Variants.Any(v => v.Price <= filter.ToPrice.Value));
             }
-
+*/
             var totalCount = await query.CountAsync();
 
-            var colors = await query
+            /*var colors = await query
                 .SelectMany(u => u.Variants.Select(v => v.Color))
                 .Distinct()
-                .ToListAsync();
+                .ToListAsync();*/
 
             var items = await query
                 .Skip((filter.PageNumber - 1) * filter.PageSize)    
@@ -165,7 +165,7 @@ namespace Mirai.Infastructure.Repositories
                 TotalCount = totalCount,
                 PageNumber = filter.PageNumber,     
                 PageSize = filter.PageSize,
-                Colors = colors
+                //Colors = colors
             };
 
         }

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Mirai.Application.DTO;
 using Mirai.Application.Interfaces.Services;
+using Mirai.Application.SearchFilter;
 
 namespace Mirai.Controllers
 {
@@ -49,6 +50,16 @@ namespace Mirai.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+        [HttpGet("Get-cart-by-id")]
+        public async Task<IActionResult> GetCartById([FromQuery] CartSearchFilter filter)
+        {
+            var result = await _cartItemsService.GetCartById(filter);
+            if (result == null)
+            {
+                return NotFound($"Cart not found by ID: {filter.CartId}");
+            }
+            return Ok(result);
         }
     }
 }
