@@ -16,11 +16,11 @@ namespace Mirai.Application.SearchFilter
         public string? CategoryName { get; set; }
         public string? BrandId { get; set; }
         public string? BrandName { get; set; }
-        public string? VariantId { get; set; }
+        /*public string? VariantId { get; set; }
         public string? Color { get; set; }
         public string? PhoneModel { get; set; }
         public decimal? FromPrice { get; set; }
-        public decimal? ToPrice { get; set; }
+        public decimal? ToPrice { get; set; }*/
 
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;

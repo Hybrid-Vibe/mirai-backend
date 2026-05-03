@@ -1,4 +1,6 @@
 ﻿using Mirai.Application.DTO;
+using Mirai.Application.Extension;
+using Mirai.Application.SearchFilter;
 using Mirai.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -12,5 +14,6 @@ namespace Mirai.Application.Interfaces.Repositories
         Task<Cart> GetCartByUserIdAsync(string userId);
         Task<List<CartItem>> GetCartItemByCartIdAsync(string cartId);
         Task RemoveCartItems(List<CartItem> cartItems);
+        Task<PagedResult<CartDto>> GetCartById(CartSearchFilter filter);
     }
 }
