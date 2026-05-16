@@ -47,6 +47,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
+    public virtual DbSet<AIImage> AIImages { get; set; }
+
     
     private string GetConnectionString()
     {
@@ -697,6 +699,60 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_role");
+        });
+
+        modelBuilder.Entity<AIImage>(entity =>
+        {
+            entity.HasKey(e => e.AIImageId).HasName("ai_images_pkey");
+
+            entity.ToTable("ai_images");
+
+            entity.Property(e => e.AIImageId)
+                .HasMaxLength(40)
+                .HasColumnName("ai_image_id");
+            entity.Property(e => e.UserId)
+                .HasMaxLength(40)
+                .HasColumnName("user_id");
+            entity.Property(e => e.Prompt)
+                .HasMaxLength(1000)
+                .HasColumnName("prompt");
+            entity.Property(e => e.NegativePrompt)
+                .HasMaxLength(1000)
+                .HasColumnName("negative_prompt");
+            entity.Property(e => e.ImageUrl)
+                .HasMaxLength(500)
+                .HasColumnName("image_url");
+            entity.Property(e => e.ThumbnailUrl)
+                .HasMaxLength(500)
+                .HasColumnName("thumbnail_url");
+            entity.Property(e => e.Style)
+                .HasMaxLength(50)
+                .HasColumnName("style");
+            entity.Property(e => e.Width)
+                .HasColumnName("width");
+            entity.Property(e => e.Height)
+                .HasColumnName("height");
+            entity.Property(e => e.Status)
+                .HasMaxLength(20)
+                .HasColumnName("status");
+            entity.Property(e => e.ErrorMessage)
+                .HasMaxLength(500)
+                .HasColumnName("error_message");
+            entity.Property(e => e.NanoBananaRequestId)
+                .HasMaxLength(100)
+                .HasColumnName("nano_banana_request_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
+
+            entity.HasOne(d => d.User).WithMany(p => p.AIImages)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_ai_images_user");
         });
 
         OnModelCreatingPartial(modelBuilder);

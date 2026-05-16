@@ -8,7 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace SportsBicycleStore.Infastructure.Services
+namespace Mirai.Infastructure.Services
 {
     public class JwtTokenGenerator : IJwtTokenGenerator
     {

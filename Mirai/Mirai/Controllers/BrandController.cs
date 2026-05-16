@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Mirai.Application.DTO;
 using Mirai.Application.Interfaces.Services;
@@ -14,6 +15,8 @@ namespace Mirai.Controllers
         {
             _brandService = brandService;
         }
+
+        [Authorize(Roles = "1, 2, 3")]
         [HttpGet("Get-All-Brands")]
         public async Task<IActionResult> GetAllBrands()
         {
