@@ -26,7 +26,6 @@ namespace Mirai.Infastructure.Repositories
                 ProductId = Guid.NewGuid().ToString(),
                 Name = createProductDto.Name,
                 Description = createProductDto.Description,
-                Price = createProductDto.Price,
                 CategoryId = createProductDto.CategoryId,
                 BrandId = createProductDto.BrandId,
                 IsActive = true,
@@ -37,6 +36,82 @@ namespace Mirai.Infastructure.Repositories
             return product;
         }
 
+        public async Task CreateProduct(CreateProductRequestDto request)
+        {
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
+            {
+            using var transaction =
+                await _context.Database.BeginTransactionAsync();
+
+                try
+                {
+                    var productId = Guid.NewGuid().ToString();
+                    var product = new Product()
+                    {
+                        ProductId = productId,
+                        Name = request.Name,
+                        Description = request.Description,
+                        CategoryId = request.CategoryId,
+                        BrandId = request.BrandId,
+                        IsActive = true,
+                        CreatedAt = DateTime.Now,
+                    };
+
+                    await _context.AddAsync(product);
+
+                    var productImages = request.Images.Select(x => new ProductImage
+                    {
+                        ImageId = Guid.NewGuid().ToString(),
+                        ProductId = productId,
+                        VariantId = null,
+                        ImageUrl = x.ImageUrl,
+                        CreatedAt = DateTime.Now,
+                    }).ToList() ;
+
+                    await _context.AddRangeAsync(productImages);
+
+                    //variant
+                    foreach (var variantDto in request.Variants)
+                    {
+                        var variantId = Guid.NewGuid().ToString();
+                        var variant = new ProductVariant()
+                        {
+                            VariantId = variantId,
+                            ProductId = productId,
+                            Color = variantDto.Color,
+                            PhoneModel = variantDto.PhoneModel,
+                            Price = variantDto.Price,
+                            IsActive = true,
+                            CreatedAt= DateTime.Now,
+                        };
+
+                        await _context.AddRangeAsync (variant);
+
+                        var variantImage = new ProductImage()
+                        {
+                            ImageId = Guid.NewGuid().ToString(),
+                            ProductId = productId,
+                            VariantId = variantId,
+                            ImageUrl = variantDto.ImageUrl,
+                            IsPrimary = false,
+                            CreatedAt = DateTime.Now,
+                        };
+                        await _context.AddRangeAsync(variantImage);
+
+                    }
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                }
+                catch (Exception ex) {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
+        }
+
         public async Task<List<ProductDto>> GetAllProducts()
         {
             var products = await _context.Products.Select(p => new ProductDto
@@ -44,7 +119,6 @@ namespace Mirai.Infastructure.Repositories
                 ProductId = p.ProductId,
                 Name = p.Name,
                 Description = p.Description,
-                Price = p.Price,
                 CategoryId = p.CategoryId,
                 CategoryName = p.Category!.Name,
                 BrandId = p.BrandId,
@@ -179,7 +253,6 @@ namespace Mirai.Infastructure.Repositories
             }
             product.Name = createProductDto.Name;
             product.Description = createProductDto.Description;
-            product.Price = createProductDto.Price;
             product.BrandId = createProductDto.BrandId;
             product.CategoryId = createProductDto.CategoryId;
             _context.Products.Update(product);

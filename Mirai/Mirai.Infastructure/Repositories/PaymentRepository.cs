@@ -23,9 +23,9 @@ namespace Mirai.Infastructure.Repositories
             {
                 PaymentId = Guid.NewGuid().ToString(),
                 OrderId = paymentByCODDto.OrderId,
-                Method = "COD",
-                Provider = "COD",
-                Status = (PaymentStatusInPayment.Pending).ToString(),
+                Method = (int)PaymentMethod.COD,
+                Provider = (int)PaymentMethod.COD,
+                Status = (int)PaymentStatusInPayment.Pending,
                 Amount = paymentByCODDto.Amount,
                 TransactionId = "0",
                 CreatedAt = DateTime.Now,
@@ -42,9 +42,9 @@ namespace Mirai.Infastructure.Repositories
             {
                 PaymentId = Guid.NewGuid().ToString(),
                 OrderId = paymentDto.OrderId,
-                Method = "VNPay",
-                Provider = "VNPay",
-                Status = (PaymentStatusInPayment.Pending).ToString(),
+                Method = (int)PaymentMethod.VNPay,
+                Provider = (int)PaymentMethod.VNPay,
+                Status = (int)PaymentStatusInPayment.Pending,
                 Amount = paymentDto.Amount,
                 TransactionId = paymentDto.TransactionId,
                 CreatedAt = DateTime.Now,
@@ -61,14 +61,15 @@ namespace Mirai.Infastructure.Repositories
                 .FirstOrDefaultAsync(p => p.OrderId == orderId)
                 ?? throw new Exception("Payment not found");
 
-            if (!Enum.TryParse(payment.Status, out PaymentStatusInPayment currentStatus))
+            if (!Enum.IsDefined(typeof(PaymentStatusInPayment), payment.Status))
             {
                 throw new Exception($"Invalid payment status in DB: {payment.Status}");
             }
+            var currentStatus = (PaymentStatusInPayment)payment.Status; 
             if(!PaymentStateValidator.CanUpdatePaymentStatus(currentStatus, newStatus))
                 throw new Exception($"Invalid payment status transition: {payment.Status} -> {newStatus}");
             
-            payment.Status = newStatus.ToString();
+            payment.Status = (int)newStatus;
             payment.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();

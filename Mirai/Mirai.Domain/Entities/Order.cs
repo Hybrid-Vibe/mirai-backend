@@ -23,9 +23,9 @@ public partial class Order
 
     public string? Currency { get; set; }
 
-    public string? Status { get; set; }
+    public int? Status { get; set; }
 
-    public string? PaymentStatus { get; set; }
+    public int? PaymentStatus { get; set; }
 
     public string? Note { get; set; }
 

@@ -20,97 +20,103 @@ namespace Mirai.Infastructure.Repositories
 
         public async Task<OrderResponseDto> CreateOrder(OrderRequestDto orderRequestDto)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            var strategy = _context.Database.CreateExecutionStrategy();
+            OrderResponseDto orderResponse = null;
+
+            await strategy.ExecuteAsync(async () =>
             {
-                decimal? subtotal = 0;
-                var orderId = Guid.NewGuid().ToString();
-                var order = new Order
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
-                    OrderId = orderId,
-                    UserId = orderRequestDto.UserId,
-                    OrderNumber = $"ORD-{DateTime.Now.Ticks}",
-                    Currency = "VNĐ",
-                    Status = (OrderStatus.Created).ToString(),
-                    PaymentStatus = (PaymentStatus.Unpaid).ToString(),
-
-                    Note = orderRequestDto.Note,
-                    CreatedAt = DateTime.Now,
-                    PlacedAt = DateTime.Now
-                };
-                var orderItems = new List<OrderItem>();
-
-                var variantIds = orderRequestDto.Products.Select(p => p.VariantId).ToList();
-
-                var variants = await _context.ProductVariants
-                    .Include(v => v.Product)
-                    .Where(v => variantIds.Contains(v.VariantId))
-                    .ToDictionaryAsync(v => v.VariantId);
-
-                foreach (var item in orderRequestDto.Products)
-                {
-                    if (!variants.TryGetValue(item.VariantId, out var variant))
-                        throw new Exception($"Variant {item.VariantId} not found");
-
-
-                    if (item.Quantity <= 0)
-                        throw new Exception("Quantity must be > 0");
-
-                    var lineTotal = variant.Price * item.Quantity;
-
-                    subtotal += lineTotal;
-                    orderItems.Add(new OrderItem
+                    decimal? subtotal = 0;
+                    var orderId = Guid.NewGuid().ToString();
+                    var order = new Order
                     {
-                        OrderItemId = Guid.NewGuid().ToString(),
                         OrderId = orderId,
-                        VariantId = variant.VariantId,
-                        Quantity = item.Quantity,
-                        ProductName = variant.Product.Name,
-                        VariantName = $"{variant.Color} - {variant.PhoneModel}",
-                        Price = lineTotal,
-                        UnitPrice = variant.Price,
-                        DiscountAmount = 0
+                        UserId = orderRequestDto.UserId,
+                        OrderNumber = $"ORD-{DateTime.Now.Ticks}",
+                        Currency = "VNĐ",
+                        Status = (int)OrderStatus.Created,
+                        PaymentStatus = (int)PaymentStatus.Unpaid,
 
-                    });
-                }
-                order.Subtotal = subtotal;
-                order.DiscountAmount = 0;
-                order.ShippingFee = 0;
-                order.TaxAmount = 0;
-                order.TotalAmount = (decimal)(subtotal ?? 0);
+                        Note = orderRequestDto.Note,
+                        CreatedAt = DateTime.Now,
+                        PlacedAt = DateTime.Now
+                    };
+                    var orderItems = new List<OrderItem>();
 
-                await _context.Orders.AddAsync(order);
-                await _context.OrderItems.AddRangeAsync(orderItems);
+                    var variantIds = orderRequestDto.Products.Select(p => p.VariantId).ToList();
 
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                    var variants = await _context.ProductVariants
+                        .Include(v => v.Product)
+                        .Where(v => variantIds.Contains(v.VariantId))
+                        .ToDictionaryAsync(v => v.VariantId);
 
-                return new OrderResponseDto
-                {
-                    OrderId = order.OrderId,
-                    OrderNumber = order.OrderNumber,
-                    TotalAmount = order.TotalAmount,
-                    Status = order.Status,
-                    PaymentStatus = order.PaymentStatus,
-                    CreatedAt = order.CreatedAt,
-
-                    Items = orderItems.Select(x => new OrderItemResponseDto
+                    foreach (var item in orderRequestDto.Products)
                     {
-                        ProductName = x.ProductName,
-                        VariantName = x.VariantName,
-                        Quantity = x.Quantity,
-                        UnitPrice = (decimal)x.UnitPrice,
-                        Price = (decimal)x.Price,
+                        if (!variants.TryGetValue(item.VariantId, out var variant))
+                            throw new Exception($"Variant {item.VariantId} not found");
 
-                    }).ToList()
-                };
 
+                        if (item.Quantity <= 0)
+                            throw new Exception("Quantity must be > 0");
+
+                        var lineTotal = variant.Price * item.Quantity;
+
+                        subtotal += lineTotal;
+                        orderItems.Add(new OrderItem
+                        {
+                            OrderItemId = Guid.NewGuid().ToString(),
+                            OrderId = orderId,
+                            VariantId = variant.VariantId,
+                            Quantity = item.Quantity,
+                            ProductName = variant.Product.Name,
+                            VariantName = $"{variant.Color} - {variant.PhoneModel}",
+                            Price = lineTotal,
+                            UnitPrice = variant.Price,
+                            DiscountAmount = 0
+
+                        });
+                    }
+                    order.Subtotal = subtotal;
+                    order.DiscountAmount = 0;
+                    order.ShippingFee = 0;
+                    order.TaxAmount = 0;
+                    order.TotalAmount = (decimal)(subtotal ?? 0);
+
+                    await _context.Orders.AddAsync(order);
+                    await _context.OrderItems.AddRangeAsync(orderItems);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    orderResponse = new OrderResponseDto
+                    {
+                        OrderId = order.OrderId,
+                        OrderNumber = order.OrderNumber,
+                        TotalAmount = order.TotalAmount,
+                        Status = (int)(OrderStatus)order.Status,
+                        PaymentStatus = (int)(PaymentStatus)order.PaymentStatus,
+                        CreatedAt = order.CreatedAt,
+
+                        Items = orderItems.Select(x => new OrderItemResponseDto
+                        {
+                            ProductName = x.ProductName,
+                            VariantName = x.VariantName,
+                            Quantity = x.Quantity,
+                            UnitPrice = (decimal)x.UnitPrice,
+                            Price = (decimal)x.Price,
+
+                        }).ToList()
+                    };
                 }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                throw new Exception(ex.Message);
-            }
+                catch (Exception)
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
+
+            return orderResponse;
         }
 
         public async Task UpdateOrderStatus(string orderId, OrderStatus newStatus)
@@ -120,19 +126,19 @@ namespace Mirai.Infastructure.Repositories
                 ?? throw new Exception("Order not found");
 
             // FIX 1: parse enum đúng
-            var currentStatus = Enum.Parse<OrderStatus>(order.Status);
+            var currentStatus = (OrderStatus)order.Status;
 
             if (!OrderStateValidator.CanUpdateOrderStatus(currentStatus, newStatus))
                 throw new Exception($"Invalid order status transition: {order.Status} -> {newStatus}");
 
             // FIX 2: check payment status đúng kiểu string
             if (newStatus == OrderStatus.Cancelled &&
-                order.PaymentStatus == PaymentStatus.Paid.ToString())
+                order.PaymentStatus == (int)PaymentStatus.Paid)
             {
                 throw new Exception("Cannot cancel paid order without refund");
             }
 
-            order.Status = newStatus.ToString();
+            order.Status = (int)newStatus;
 
             await _context.SaveChangesAsync();
         }
@@ -144,17 +150,14 @@ namespace Mirai.Infastructure.Repositories
                 ?? throw new Exception("Order not found");
 
             // FIX: parse đúng enum
-            if (!Enum.TryParse(order.PaymentStatus, out PaymentStatus currentStatus))
-            {
-                throw new Exception($"Invalid payment status in DB: {order.PaymentStatus}");
-            }
+            var currentStatus = (PaymentStatus)order.PaymentStatus;
 
             // validate transition
             if (!OrderStateValidator.CanUpdatePaymentStatus(currentStatus, newStatus))
                 throw new Exception($"Invalid payment transition: {order.PaymentStatus} -> {newStatus}");
 
             // update
-            order.PaymentStatus = newStatus.ToString();
+            order.PaymentStatus = (int)newStatus;
 
             await _context.SaveChangesAsync();
         }
@@ -164,18 +167,18 @@ namespace Mirai.Infastructure.Repositories
             var order = await _context.Orders.FindAsync(orderId)
                 ?? throw new Exception("Order not found");
 
-            if (order.PaymentStatus != PaymentStatus.Paid.ToString())
+            if (order.PaymentStatus != (int)PaymentStatus.Paid)
                 throw new Exception("Only paid orders can be refunded");
 
-            if (order.Status == OrderStatus.Delivered.ToString())
+            if (order.Status == (int)OrderStatus.Delivered)
                 throw new Exception("Cannot cancel delivered order");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             // TODO: gọi payment gateway refund ở đây
 
-            order.Status = OrderStatus.Cancelled.ToString();
-            order.PaymentStatus = PaymentStatus.Refunded.ToString();
+            order.Status = (int)OrderStatus.Cancelled;
+            order.PaymentStatus = (int)PaymentStatus.Refunded;
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -187,10 +190,10 @@ namespace Mirai.Infastructure.Repositories
             var order = await _context.Orders.FindAsync(orderId)
                 ?? throw new Exception("Order not found");
 
-            if (order.PaymentStatus != PaymentStatus.Unpaid.ToString())
+            if (order.PaymentStatus != (int)PaymentStatus.Unpaid)
                 throw new Exception("Invalid payment state");
 
-            order.PaymentStatus = PaymentStatus.Paid.ToString();
+            order.PaymentStatus = (int)PaymentStatus.Paid;
 
             await _context.SaveChangesAsync();
         }
@@ -201,13 +204,13 @@ namespace Mirai.Infastructure.Repositories
             var order = await _context.Orders.FindAsync(orderId)
                 ?? throw new Exception("Order not found");
 
-            if (order.PaymentStatus != PaymentStatus.Unpaid.ToString())
+            if (order.PaymentStatus != (int)PaymentStatus.Unpaid)
                 throw new Exception("Invalid payment state");
 
-            order.PaymentStatus = PaymentStatus.Failed.ToString();
+            order.PaymentStatus = (int)PaymentStatus.Failed;
 
             // Optional: auto cancel luôn
-            order.Status = OrderStatus.Cancelled.ToString();
+            order.Status = (int)OrderStatus.Cancelled;
 
             await _context.SaveChangesAsync();
         }

@@ -23,6 +23,11 @@ namespace Mirai.Infastructure.Services
             return await _unitOfWork.ProductRepository.CreateProduct(createProductDto);
         }
 
+        public async Task CreateAllProducts(CreateProductRequestDto request)
+        {
+             await _unitOfWork.ProductRepository.CreateProduct(request);
+        }
+
         public async Task<List<ProductDto>> GetAllProducts()
         {
             return await _unitOfWork.ProductRepository.GetAllProducts();
