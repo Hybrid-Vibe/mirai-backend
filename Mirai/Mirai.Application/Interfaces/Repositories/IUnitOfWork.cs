@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace Mirai.Application.Interfaces.Repositories
 {
     public interface IUnitOfWork : IDisposable
     {
-        Task<int> SaveChangesAsync();
+        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
         IUserRepository UserRepository { get; }
         IAddressRepository AddressRepository { get; }
         IBrandRepository BrandRepository { get; }
@@ -17,5 +16,6 @@ namespace Mirai.Application.Interfaces.Repositories
         IOrderRepository OrderRepository { get; }
         IPaymentRepository PaymentRepository { get; }
         ICartItemsRepository CartItemsRepository { get; }
+        IAIImageRepository AIImageRepository { get; }
     }
 }

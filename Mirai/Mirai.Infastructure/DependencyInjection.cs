@@ -6,28 +6,41 @@ using Mirai.Application.Interfaces.Services;
 using Mirai.Infastructure.Data;
 using Mirai.Infastructure.Repositories;
 using Mirai.Infastructure.Services;
-using SportsBicycleStore.Infastructure.Services;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Mirai.Infastructure
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddInfrastructure(
-            this IServiceCollection services,
-            IConfiguration configuration)
+        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
-            // DbContext
+            services.AddPersistence(configuration);
+            services.AddApplicationServices();
+            services.AddExternalClients(configuration);
+
+            return services;
+        }
+
+        public static IServiceCollection AddApplication(this IServiceCollection services)
+        {
+            return services;
+        }
+
+        private static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
+        {
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(
-                    configuration.GetConnectionString("DefaultConnection")
+                    configuration.GetConnectionString("DefaultConnection"),
+                    sqlOptions => sqlOptions.EnableRetryOnFailure()
                 )
             );
 
-            // Unit of Work
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            return services;
+        }
+
+        private static IServiceCollection AddApplicationServices(this IServiceCollection services)
+        {
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAddressService, AddressService>();
             services.AddScoped<IBrandService, BrandService>();
@@ -38,17 +51,19 @@ namespace Mirai.Infastructure
             services.AddScoped<IOrderService, OrderService>();
             services.AddScoped<IPaymentService, PaymentService>();
             services.AddScoped<ICartItemsService, CartItemsService>();
-            //services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IAIImageService, AIImageService>();
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
             return services;
         }
 
-        public static IServiceCollection AddApplication(
-           this IServiceCollection services)
+        private static IServiceCollection AddExternalClients(this IServiceCollection services, IConfiguration configuration)
         {
-            // Services
-            //services.AddScoped<IAuthService, AuthService>();
+            services.AddHttpClient<INanoBananaService, NanoBananaService>(client =>
+            {
+                var baseUrl = configuration["NanoBanana:BaseUrl"] ?? "https://api.nanobanana.ai";
+                client.BaseAddress = new Uri(baseUrl);
+            });
 
             return services;
         }
