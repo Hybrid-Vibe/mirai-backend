@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Mirai.Application.DTO;
 using Mirai.Application.Interfaces.Services;
@@ -10,9 +11,11 @@ namespace Mirai.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
-        public UserController(IUserService userService)
+        private readonly IJwtTokenGenerator _tokenBlacklistService;
+        public UserController(IUserService userService, IJwtTokenGenerator tokenBlacklistService)
         {
             _userService = userService;
+            _tokenBlacklistService = tokenBlacklistService;
         }
 
         [HttpPost("login")]
@@ -44,6 +47,28 @@ namespace Mirai.Controllers
             }
         }
 
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            var authHeader = Request.Headers["Authorization"].ToString();
+
+            if (string.IsNullOrEmpty(authHeader))
+            {
+                return BadRequest();
+            }
+
+            var token = authHeader.Replace("Bearer ", "");
+
+            await _tokenBlacklistService.BlacklistTokenAsync(token);
+
+            return Ok(new
+            {
+                message = "Logout successful"
+            });
+        }
+
+        [Authorize(Roles = "1")]
         [HttpGet("Get-All-Users")]
         public async Task<IActionResult> GetAllUsersAsync()
         {
