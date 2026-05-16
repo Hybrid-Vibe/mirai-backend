@@ -11,7 +11,7 @@ public partial class User
 
     public string Email { get; set; } = null!;
 
-    public string PasswordHash { get; set; } = null!;
+    public string? PasswordHash { get; set; }
 
     public string? Phone { get; set; }
 
@@ -23,15 +23,19 @@ public partial class User
 
     public DateTime? UpdatedAt { get; set; }
 
+    public string? AvatarUrl { get; set; }
+
+    public virtual ICollection<Account> Accounts { get; set; } = new List<Account>();
+
     public virtual ICollection<Address> Addresses { get; set; } = new List<Address>();
+
+    public virtual ICollection<AiImage> AiImages { get; set; } = new List<AiImage>();
 
     public virtual ICollection<Cart> Carts { get; set; } = new List<Cart>();
 
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
-
-    public virtual ICollection<AIImage> AIImages { get; set; } = new List<AIImage>();
 
     public virtual Role Role { get; set; } = null!;
 }

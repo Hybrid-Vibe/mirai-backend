@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Mirai.Domain.Entities;
 using System;
 using System.Collections.Generic;
-using Mirai.Domain.Entities;
 
 namespace Mirai.Infastructure.Data;
 
@@ -17,7 +17,11 @@ public partial class AppDbContext : DbContext
     {
     }
 
+    public virtual DbSet<Account> Accounts { get; set; }
+
     public virtual DbSet<Address> Addresses { get; set; }
+
+    public virtual DbSet<AiImage> AiImages { get; set; }
 
     public virtual DbSet<Brand> Brands { get; set; }
 
@@ -47,9 +51,6 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
-    public virtual DbSet<AIImage> AIImages { get; set; }
-
-    
     private string GetConnectionString()
     {
         IConfiguration configuration = new ConfigurationBuilder()
@@ -62,6 +63,7 @@ public partial class AppDbContext : DbContext
     {
         optionsBuilder.UseNpgsql(GetConnectionString());
     }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -80,8 +82,35 @@ public partial class AppDbContext : DbContext
             .HasPostgresExtension("extensions", "pg_stat_statements")
             .HasPostgresExtension("extensions", "pgcrypto")
             .HasPostgresExtension("extensions", "uuid-ossp")
-            .HasPostgresExtension("graphql", "pg_graphql")
             .HasPostgresExtension("vault", "supabase_vault");
+
+        modelBuilder.Entity<Account>(entity =>
+        {
+            entity.HasKey(e => e.AccountId).HasName("accounts_pkey");
+
+            entity.ToTable("accounts");
+
+            entity.Property(e => e.AccountId)
+                .HasColumnType("character varying")
+                .HasColumnName("account_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Provider)
+                .HasColumnType("character varying")
+                .HasColumnName("provider");
+            entity.Property(e => e.ProviderAccountId)
+                .HasColumnType("character varying")
+                .HasColumnName("provider_account_id");
+            entity.Property(e => e.UserId)
+                .HasColumnType("character varying")
+                .HasColumnName("user_id");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Accounts)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("accounts_user_id_fkey");
+        });
 
         modelBuilder.Entity<Address>(entity =>
         {
@@ -133,6 +162,46 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_addresses_user");
+        });
+
+        modelBuilder.Entity<AiImage>(entity =>
+        {
+            entity.HasKey(e => e.AiImageId).HasName("ai_images_pkey");
+
+            entity.ToTable("ai_images");
+
+            entity.Property(e => e.AiImageId)
+                .HasMaxLength(40)
+                .HasColumnName("ai_image_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.ErrorMessage).HasColumnName("error_message");
+            entity.Property(e => e.Height).HasColumnName("height");
+            entity.Property(e => e.ImageUrl).HasColumnName("image_url");
+            entity.Property(e => e.NanoBananaRequestId)
+                .HasMaxLength(255)
+                .HasColumnName("nano_banana_request_id");
+            entity.Property(e => e.NegativePrompt).HasColumnName("negative_prompt");
+            entity.Property(e => e.Prompt).HasColumnName("prompt");
+            entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.Style)
+                .HasMaxLength(100)
+                .HasColumnName("style");
+            entity.Property(e => e.ThumbnailUrl).HasColumnName("thumbnail_url");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.UserId)
+                .HasMaxLength(40)
+                .HasColumnName("user_id");
+            entity.Property(e => e.Width).HasColumnName("width");
+
+            entity.HasOne(d => d.User).WithMany(p => p.AiImages)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_ai_images_user");
         });
 
         modelBuilder.Entity<Brand>(entity =>
@@ -206,6 +275,12 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("created_at");
+            entity.Property(e => e.CustomDesignConfig)
+                .HasColumnType("jsonb")
+                .HasColumnName("custom_design_config");
+            entity.Property(e => e.CustomImageUrl)
+                .HasColumnType("character varying")
+                .HasColumnName("custom_image_url");
             entity.Property(e => e.Quantity).HasColumnName("quantity");
             entity.Property(e => e.UnitPrice)
                 .HasPrecision(10, 2)
@@ -282,18 +357,14 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.OrderNumber)
                 .HasMaxLength(32)
                 .HasColumnName("order_number");
-            entity.Property(e => e.PaymentStatus)
-                .HasMaxLength(50)
-                .HasColumnName("payment_status");
+            entity.Property(e => e.PaymentStatus).HasColumnName("payment_status");
             entity.Property(e => e.PlacedAt)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("placed_at");
             entity.Property(e => e.ShippingFee)
                 .HasPrecision(10, 2)
                 .HasColumnName("shipping_fee");
-            entity.Property(e => e.Status)
-                .HasMaxLength(50)
-                .HasColumnName("status");
+            entity.Property(e => e.Status).HasColumnName("status");
             entity.Property(e => e.Subtotal)
                 .HasPrecision(10, 2)
                 .HasColumnName("subtotal");
@@ -325,6 +396,12 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.OrderItemId)
                 .HasMaxLength(40)
                 .HasColumnName("order_item_id");
+            entity.Property(e => e.CustomDesignConfig)
+                .HasColumnType("jsonb")
+                .HasColumnName("custom_design_config");
+            entity.Property(e => e.CustomImageUrl)
+                .HasColumnType("character varying")
+                .HasColumnName("custom_image_url");
             entity.Property(e => e.DiscountAmount)
                 .HasPrecision(10, 2)
                 .HasColumnName("discount_amount");
@@ -376,21 +453,15 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("created_at");
             entity.Property(e => e.FailureReason).HasColumnName("failure_reason");
-            entity.Property(e => e.Method)
-                .HasMaxLength(50)
-                .HasColumnName("method");
+            entity.Property(e => e.Method).HasColumnName("method");
             entity.Property(e => e.OrderId)
                 .HasMaxLength(40)
                 .HasColumnName("order_id");
             entity.Property(e => e.PaidAt)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("paid_at");
-            entity.Property(e => e.Provider)
-                .HasMaxLength(50)
-                .HasColumnName("provider");
-            entity.Property(e => e.Status)
-                .HasMaxLength(50)
-                .HasColumnName("status");
+            entity.Property(e => e.Provider).HasColumnName("provider");
+            entity.Property(e => e.Status).HasColumnName("status");
             entity.Property(e => e.TransactionId)
                 .HasMaxLength(100)
                 .HasColumnName("transaction_id");
@@ -430,9 +501,6 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasColumnName("name");
-            entity.Property(e => e.Price)
-                .HasPrecision(10, 2)
-                .HasColumnName("price");
             entity.Property(e => e.RatingAvg)
                 .HasPrecision(3, 2)
                 .HasColumnName("rating_avg");
@@ -637,9 +705,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.ShippingFee)
                 .HasPrecision(10, 2)
                 .HasColumnName("shipping_fee");
-            entity.Property(e => e.ShippingStatus)
-                .HasMaxLength(50)
-                .HasColumnName("shipping_status");
+            entity.Property(e => e.ShippingStatus).HasColumnName("shipping_status");
             entity.Property(e => e.TrackingCode)
                 .HasMaxLength(100)
                 .HasColumnName("tracking_code");
@@ -669,6 +735,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.UserId)
                 .HasMaxLength(40)
                 .HasColumnName("user_id");
+            entity.Property(e => e.AvatarUrl).HasColumnName("avatar_url");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp without time zone")
@@ -699,60 +766,6 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_role");
-        });
-
-        modelBuilder.Entity<AIImage>(entity =>
-        {
-            entity.HasKey(e => e.AIImageId).HasName("ai_images_pkey");
-
-            entity.ToTable("ai_images");
-
-            entity.Property(e => e.AIImageId)
-                .HasMaxLength(40)
-                .HasColumnName("ai_image_id");
-            entity.Property(e => e.UserId)
-                .HasMaxLength(40)
-                .HasColumnName("user_id");
-            entity.Property(e => e.Prompt)
-                .HasMaxLength(1000)
-                .HasColumnName("prompt");
-            entity.Property(e => e.NegativePrompt)
-                .HasMaxLength(1000)
-                .HasColumnName("negative_prompt");
-            entity.Property(e => e.ImageUrl)
-                .HasMaxLength(500)
-                .HasColumnName("image_url");
-            entity.Property(e => e.ThumbnailUrl)
-                .HasMaxLength(500)
-                .HasColumnName("thumbnail_url");
-            entity.Property(e => e.Style)
-                .HasMaxLength(50)
-                .HasColumnName("style");
-            entity.Property(e => e.Width)
-                .HasColumnName("width");
-            entity.Property(e => e.Height)
-                .HasColumnName("height");
-            entity.Property(e => e.Status)
-                .HasMaxLength(20)
-                .HasColumnName("status");
-            entity.Property(e => e.ErrorMessage)
-                .HasMaxLength(500)
-                .HasColumnName("error_message");
-            entity.Property(e => e.NanoBananaRequestId)
-                .HasMaxLength(100)
-                .HasColumnName("nano_banana_request_id");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("created_at");
-            entity.Property(e => e.UpdatedAt)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("updated_at");
-
-            entity.HasOne(d => d.User).WithMany(p => p.AIImages)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_ai_images_user");
         });
 
         OnModelCreatingPartial(modelBuilder);

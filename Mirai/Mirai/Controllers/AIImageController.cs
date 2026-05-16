@@ -47,7 +47,7 @@ public class AIImageController : ControllerBase
         var result = await _aiImageService.GetAIImageByIdAsync(id, cancellationToken);
         if (result == null)
         {
-            throw new NotFoundException(nameof(AIImage), id);
+            throw new NotFoundException(nameof(AiImage), id);
         }
         return Ok(result);
     }

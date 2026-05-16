@@ -28,16 +28,16 @@ public class AIImageService : IAIImageService
     {
         _logger.LogInformation("Creating AI image for user {UserId}", userId);
 
-        var aiImage = new AIImage
+        var aiImage = new AiImage
         {
-            AIImageId = Guid.NewGuid().ToString(),
+            AiImageId = Guid.NewGuid().ToString(),
             UserId = userId,
             Prompt = createDto.Prompt,
             NegativePrompt = createDto.NegativePrompt,
             Style = createDto.Style,
             Width = createDto.Width ?? 512,
             Height = createDto.Height ?? 512,
-            Status = AIImageStatus.Pending,
+            Status = (int)AIImageStatus.Pending,
             CreatedAt = DateTime.Now
         };
 
@@ -58,19 +58,19 @@ public class AIImageService : IAIImageService
             if (nanoBananaResponse.Success)
             {
                 aiImage.NanoBananaRequestId = nanoBananaResponse.RequestId;
-                aiImage.Status = AIImageStatus.Processing;
+                aiImage.Status = (int)AIImageStatus.Processing;
                 
                 if (!string.IsNullOrEmpty(nanoBananaResponse.ImageUrl))
                 {
                     aiImage.ImageUrl = nanoBananaResponse.ImageUrl;
                     aiImage.ThumbnailUrl = nanoBananaResponse.ThumbnailUrl;
-                    aiImage.Status = AIImageStatus.Completed;
-                    _logger.LogInformation("AI image generated successfully for user {UserId}, ImageId: {ImageId}", userId, aiImage.AIImageId);
+                    aiImage.Status = (int)AIImageStatus.Completed;
+                    _logger.LogInformation("AI image generated successfully for user {UserId}, ImageId: {ImageId}", userId, aiImage.AiImageId);
                 }
             }
             else
             {
-                aiImage.Status = AIImageStatus.Failed;
+                aiImage.Status = (int)AIImageStatus.Failed;
                 aiImage.ErrorMessage = nanoBananaResponse.ErrorMessage;
                 _logger.LogWarning("NanoBanana API failed for user {UserId}: {Error}", userId, nanoBananaResponse.ErrorMessage);
             }
@@ -78,7 +78,7 @@ public class AIImageService : IAIImageService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating AI image for user {UserId}", userId);
-            aiImage.Status = AIImageStatus.Failed;
+            aiImage.Status = (int)AIImageStatus.Failed;
             aiImage.ErrorMessage = ex.Message;
         }
 
@@ -112,10 +112,10 @@ public class AIImageService : IAIImageService
         if (aiImage == null)
         {
             _logger.LogWarning("AI Image with ID {ImageId} not found", aiImageId);
-            throw new NotFoundException(nameof(AIImage), aiImageId);
+            throw new NotFoundException(nameof(AiImage), aiImageId);
         }
 
-        aiImage.Status = updateDto.Status;
+        aiImage.Status = (int)updateDto.Status;
         aiImage.UpdatedAt = DateTime.UtcNow;
 
         if (updateDto.ImageUrl != null)
@@ -142,7 +142,7 @@ public class AIImageService : IAIImageService
         if (!exists)
         {
             _logger.LogWarning("AI Image with ID {ImageId} not found", aiImageId);
-            throw new NotFoundException(nameof(AIImage), aiImageId);
+            throw new NotFoundException(nameof(AiImage), aiImageId);
         }
 
         var result = await _unitOfWork.AIImageRepository.DeleteAsync(aiImageId, userId, cancellationToken);
@@ -161,11 +161,11 @@ public class AIImageService : IAIImageService
         return result;
     }
 
-    private static AIImageDto MapToDto(AIImage aiImage)
+    private static AIImageDto MapToDto(AiImage aiImage)
     {
         return new AIImageDto
         {
-            AIImageId = aiImage.AIImageId,
+            AIImageId = aiImage.AiImageId,
             UserId = aiImage.UserId,
             Prompt = aiImage.Prompt,
             NegativePrompt = aiImage.NegativePrompt,
@@ -174,7 +174,7 @@ public class AIImageService : IAIImageService
             Style = aiImage.Style,
             Width = aiImage.Width,
             Height = aiImage.Height,
-            Status = aiImage.Status,
+            Status = (AIImageStatus)aiImage.Status,
             ErrorMessage = aiImage.ErrorMessage,
             CreatedAt = aiImage.CreatedAt,
             UpdatedAt = aiImage.UpdatedAt

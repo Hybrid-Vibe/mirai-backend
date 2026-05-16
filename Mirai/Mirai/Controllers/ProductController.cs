@@ -40,6 +40,13 @@ namespace Mirai.Controllers
             return Ok(product);
         }
 
+        [HttpPost("Create-Product-ProductImages-ProductVariants")]
+        public async Task<IActionResult> CreateAllProducts([FromBody] CreateProductRequestDto request)
+        {
+            await _productService.CreateAllProducts(request);
+            return Ok("product");
+        }
+
         [HttpPut("Update-Product/{productId}")]
         public async Task<IActionResult> UpdateProduct(string productId, [FromBody] CreateProductDto createProductDto)
         {

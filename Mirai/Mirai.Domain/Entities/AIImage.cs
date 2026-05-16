@@ -1,10 +1,11 @@
-using Mirai.Domain.Enums;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Mirai.Domain.Entities;
 
-public partial class AIImage
+public partial class AiImage
 {
-    public string AIImageId { get; set; } = null!;
+    public string AiImageId { get; set; } = null!;
 
     public string UserId { get; set; } = null!;
 
@@ -22,7 +23,7 @@ public partial class AIImage
 
     public int? Height { get; set; }
 
-    public AIImageStatus Status { get; set; }
+    public int? Status { get; set; }
 
     public string? ErrorMessage { get; set; }
 
