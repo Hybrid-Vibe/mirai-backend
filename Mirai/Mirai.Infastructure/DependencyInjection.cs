@@ -13,6 +13,8 @@ namespace Mirai.Infastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
+
+
             services.AddPersistence(configuration);
             services.AddApplicationServices();
             services.AddExternalClients(configuration);

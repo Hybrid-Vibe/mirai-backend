@@ -13,5 +13,6 @@ namespace Mirai.Application.Interfaces.Repositories
         Task<User?> GetByEmailAsync(string email);
         Task<List<GetUserDto>> GetAllUsersAsync();
         Task<GetUserDto?> GetUserByIdAsync(string userId);
+        Task SyncSupabaseUserAsync(SyncSupabaseUserDto dto);
     }
 }

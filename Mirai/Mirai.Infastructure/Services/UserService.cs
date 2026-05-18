@@ -30,6 +30,8 @@ namespace Mirai.Infastructure.Services
             return _unitOfWork.UserRepository.GetUserByIdAsync(userId);
         }
 
+        
+
         public async Task<AuthResponseDto?> LoginAsync(LoginRequestDto request)
         {
             var user = await _unitOfWork.UserRepository.GetByEmailAsync(request.Email);
@@ -64,6 +66,9 @@ namespace Mirai.Infastructure.Services
             return true;
         }
 
-        
+        public async Task SyncSupabaseUserAsync(SyncSupabaseUserDto dto)
+        {
+            await _unitOfWork.UserRepository.SyncSupabaseUserAsync(dto);
+        }
     }
 }
