@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Mirai.Application.DTO;
 using Mirai.Application.Interfaces.Services;
+using System.Security.Claims;
 
 namespace Mirai.Controllers
 {
@@ -45,6 +46,78 @@ namespace Mirai.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        [HttpPost("login-user-by-supabase")]
+        [Authorize]
+        public async Task<IActionResult> SyncUser()
+        {
+            var uid =
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst("sub")?.Value;
+
+            var email =
+                User.FindFirst(ClaimTypes.Email)?.Value
+                ?? User.FindFirst("email")?.Value;
+
+            var fullName = User.FindFirst("full_name")?.Value;
+            if (string.IsNullOrEmpty(fullName))
+            {
+                var userMetadataClaim = User.FindFirst("user_metadata");
+                if (userMetadataClaim != null && !string.IsNullOrEmpty(userMetadataClaim.Value))
+                {
+                    try
+                    {
+                        var metadata = System.Text.Json.JsonDocument.Parse(userMetadataClaim.Value);
+                        if (metadata.RootElement.TryGetProperty("full_name", out var fullNameElement))
+                        {
+                            fullName = fullNameElement.GetString();
+                        }
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                    }
+                }
+            }
+            var avatarUrl = User.FindFirst("avatar_url")?.Value;
+             if (string.IsNullOrEmpty(avatarUrl))
+            {
+                var userMetadataClaim = User.FindFirst("user_metadata");
+                if (userMetadataClaim != null && !string.IsNullOrEmpty(userMetadataClaim.Value))
+                {
+                    try
+                    {
+                        var metadata = System.Text.Json.JsonDocument.Parse(userMetadataClaim.Value);
+                        if (metadata.RootElement.TryGetProperty("avatar_url", out var avatarUrlElement))
+                        {
+                            avatarUrl = avatarUrlElement.GetString();
+                        }
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(uid))
+            {
+                return Unauthorized();
+            }
+
+            var dto = new SyncSupabaseUserDto
+            {
+                SupabaseUid = uid,
+                Email = email ?? "",
+                FullName = fullName ?? "",
+                AvatarUrl = avatarUrl ?? ""
+            };
+
+            await _userService.SyncSupabaseUserAsync(dto);
+
+            return Ok(new
+            {
+                message = "Sync success"
+            });
         }
 
         [Authorize]

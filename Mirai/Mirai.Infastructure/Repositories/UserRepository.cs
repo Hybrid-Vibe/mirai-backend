@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Mirai.Application.DTO;
 using Mirai.Application.Interfaces.Repositories;
 using Mirai.Domain.Entities;
@@ -74,6 +75,47 @@ namespace Mirai.Infastructure.Repositories
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
             return user;
+        }
+
+        public async Task SyncSupabaseUserAsync(SyncSupabaseUserDto dto)
+        {
+            var existingUser = await _context.Users
+                .FirstOrDefaultAsync(x => x.UserId == dto.SupabaseUid);
+
+            if (existingUser == null)
+            {
+                var user = new User
+                {
+                    UserId = dto.SupabaseUid,
+                    Email = dto.Email,
+                    FullName = dto.FullName,
+                    RoleId = "3",
+                    IsActive = true,
+                    AvatarUrl = dto.AvatarUrl,
+                    CreatedAt = DateTime.Now
+                };
+
+                await _context.Users.AddAsync(user);
+
+                var account = new Account
+                {
+                    AccountId = Guid.NewGuid().ToString(),
+                    UserId = dto.SupabaseUid,
+                    Provider = "google",
+                    ProviderAccountId = dto.SupabaseUid,
+                    CreatedAt = DateTime.Now
+                };
+
+                await _context.Accounts.AddAsync(account);
+
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                existingUser.FullName = dto.FullName;
+
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

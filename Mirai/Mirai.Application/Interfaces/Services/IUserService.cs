@@ -12,5 +12,6 @@ namespace Mirai.Application.Interfaces.Services
         Task<AuthResponseDto?> LoginAsync(LoginRequestDto request);
         Task<List<GetUserDto>> GetAllUsersAsync();
         Task<GetUserDto?> GetUserByIdAsync(string userId);
+        Task SyncSupabaseUserAsync(SyncSupabaseUserDto dto);
     }
 }
