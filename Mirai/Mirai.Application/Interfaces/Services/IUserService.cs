@@ -13,5 +13,9 @@ namespace Mirai.Application.Interfaces.Services
         Task<List<GetUserDto>> GetAllUsersAsync();
         Task<GetUserDto?> GetUserByIdAsync(string userId);
         Task SyncSupabaseUserAsync(SyncSupabaseUserDto dto);
+        Task<bool> ChangePasswordAsync(string userId, ChangePasswordRequestDto request);
+        Task<bool> UpdateProfileUserAsync(string userId, UpdateProfileUserDto dto);
+        Task<bool> UpdateProfileUserForAdminAsync(string userId, UpdateProfileUserByAdminDto dto);
+
     }
 }
