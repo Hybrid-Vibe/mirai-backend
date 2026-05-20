@@ -7,6 +7,7 @@ using Mirai.Domain.Enum;
 using Mirai.Infastructure.Data;
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Text;
 using Role = Mirai.Domain.Enum.Role;
 
@@ -16,6 +17,25 @@ namespace Mirai.Infastructure.Repositories
     {
         public UserRepository(AppDbContext context) : base(context)
         {
+        }
+
+        public async Task<User?> GetByIdAsync(string id)
+        {
+            return await base.GetByIdAsync(id);
+        }
+
+        public async Task<bool> ChangePasswordAsync(string userId, ChangePasswordRequestDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null || string.IsNullOrEmpty(user.PasswordHash))
+            {
+                return false;
+            }
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            user.UpdatedAt = DateTime.Now;
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         public Task<List<GetUserDto>> GetAllUsersAsync()
@@ -116,6 +136,42 @@ namespace Mirai.Infastructure.Repositories
 
                 await _context.SaveChangesAsync();
             }
+        }
+
+        public async Task<User?> UpdateProfileUserAsync(string userId, UpdateProfileUserDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null)
+            {
+                return null;
+            }
+
+            user.FullName = dto.FullName;
+            user.Phone = dto.Phone;
+            user.AvatarUrl = dto.AvatarUrl;
+            user.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+            return user;
+        }
+
+        public async Task<User?> UpdateProfileUserForAdminAsync(string userId, UpdateProfileUserByAdminDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null)
+            {
+                return null;
+            }
+
+            user.FullName = dto.FullName;
+            user.Phone = dto.Phone;
+            user.AvatarUrl = dto.AvatarUrl;
+            user.RoleId = dto.RoleId;
+            user.IsActive = dto.IsActive;
+            user.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+            return user;
         }
     }
 }

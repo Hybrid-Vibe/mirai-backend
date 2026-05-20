@@ -80,7 +80,7 @@ namespace Mirai.Controllers
                 }
             }
             var avatarUrl = User.FindFirst("avatar_url")?.Value;
-             if (string.IsNullOrEmpty(avatarUrl))
+            if (string.IsNullOrEmpty(avatarUrl))
             {
                 var userMetadataClaim = User.FindFirst("user_metadata");
                 if (userMetadataClaim != null && !string.IsNullOrEmpty(userMetadataClaim.Value))
@@ -155,6 +155,47 @@ namespace Mirai.Controllers
             var users = await _userService.GetUserByIdAsync(userId);
             return Ok(users);
 
+        }
+
+        //[Authorize]
+        [HttpPut("Change-Password{userId}")]
+        public Task<IActionResult> ChangePasswordAsync(string userId, [FromBody] ChangePasswordRequestDto request)
+        {
+
+            return _userService.ChangePasswordAsync(userId, request)
+                .ContinueWith<IActionResult>(task =>
+                {
+                    if (task.Result)
+                    {
+                        return Ok(new { message = "Password changed successfully." });
+                    }
+                    else
+                    {
+                        return BadRequest(new { message = "Current password is incorrect." });
+                    }
+                });
+        }
+
+        [HttpPut("Update-Profile/{userId}")]
+        public async Task<IActionResult> UpdateProfileUserAsync(string userId, [FromBody] UpdateProfileUserDto dto)
+        {
+            var updatedUser = await _userService.UpdateProfileUserAsync(userId, dto);
+            if (!updatedUser)
+            {
+                return NotFound(new { message = "User not found." });
+            }
+            return Ok(new { message = "User profile updated successfully." });
+        }
+
+        [HttpPut("Update-Profile-By-Admin/{userId}")]
+        public async Task<IActionResult> UpdateProfileUserForAdminAsync(string userId, [FromBody] UpdateProfileUserByAdminDto dto)
+        {
+            var updatedUser = await _userService.UpdateProfileUserForAdminAsync(userId, dto);
+            if (!updatedUser)
+            {
+                return NotFound(new { message = "User not found." });
+            }
+            return Ok(new { message = "User profile updated successfully." });
         }
     }
 }
