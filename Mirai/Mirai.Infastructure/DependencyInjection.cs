@@ -56,6 +56,7 @@ namespace Mirai.Infastructure
             services.AddScoped<IAIImageService, AIImageService>();
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
             services.AddScoped<ITurnstileService, TurnstileService>();
+            services.AddScoped<IReviewService, ReviewService>();
 
             return services;
         }

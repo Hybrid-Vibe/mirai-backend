@@ -259,5 +259,20 @@ namespace Mirai.Infastructure.Repositories
             await _context.SaveChangesAsync();
             return product;
         }
+
+        public async Task<bool> UpdateProductStar(string productId, decimal RatingAvg, int RatingCount)
+        {
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == productId);
+            if (product == null)
+            {
+                return false;
+            }
+            product.RatingAvg = RatingAvg;
+            product.RatingCount = RatingCount;
+            product.UpdatedAt = DateTime.Now;
+            _context.Products.Update(product);
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }
