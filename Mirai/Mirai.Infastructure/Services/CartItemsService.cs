@@ -3,6 +3,7 @@ using Mirai.Application.Extension;
 using Mirai.Application.Interfaces.Repositories;
 using Mirai.Application.Interfaces.Services;
 using Mirai.Application.SearchFilter;
+using Mirai.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -42,6 +43,7 @@ namespace Mirai.Infastructure.Services
             };
             var result = await _unitOfWork.OrderRepository.CreateOrder(orderRequest);
             await _unitOfWork.CartItemsRepository.RemoveCartItems(cartItems);
+            await _unitOfWork.CartItemsRepository.DeleteCart(cart.CartId);
             return result;
         }
 
@@ -53,6 +55,23 @@ namespace Mirai.Infastructure.Services
                 return null;
             }
                 return await _unitOfWork.CartItemsRepository.CreateCartDtoAsync(createCartDto);
+        }
+
+        public async Task<bool> DeleteCartItem(string cartItemId)
+        {
+            var cartItem = await _unitOfWork.CartItemsRepository.GetByCartItemIdAsync(cartItemId);
+            if (cartItem == null)
+            {
+                return false;
+            }
+
+            await _unitOfWork.CartItemsRepository.DeleteCartItem(cartItemId);
+            return true;
+        }
+
+        public async Task<CartItem?> GetByCartItemIdAsync(string id)
+        {
+            return await _unitOfWork.CartItemsRepository.GetByCartItemIdAsync(id);
         }
 
         public async Task<PagedResult<CartDto>> GetCartById(CartSearchFilter filter)

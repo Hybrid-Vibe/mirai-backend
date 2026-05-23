@@ -61,5 +61,29 @@ namespace Mirai.Controllers
             }
             return Ok(result);
         }
+
+        [HttpDelete("Delete-cart-item-{cartItemId}")]
+        public async Task<IActionResult> DeleteCartItem(string cartItemId)
+        {
+            var wasDeleted = await _cartItemsService.DeleteCartItem(cartItemId);
+
+            if (!wasDeleted)
+            {
+                return NotFound("Cart item not found");
+            }
+            
+            return Content($"Cart item with ID: {cartItemId} has been deleted");
+        }
+
+        [HttpGet("Get-cart-item-by-id-{cartItemId}")]
+        public async Task<IActionResult> GetCartItemById(string cartItemId)
+        {
+            var cartItem = await _cartItemsService.GetByCartItemIdAsync(cartItemId);
+            if (cartItem == null)
+            {
+                return NotFound($"Cart item not found by ID: {cartItemId}");
+            }
+            return Ok(cartItem);
+        }
     }
 }

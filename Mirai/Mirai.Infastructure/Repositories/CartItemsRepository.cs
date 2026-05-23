@@ -56,6 +56,46 @@ namespace Mirai.Infastructure.Repositories
             return createCartDto;
         }
 
+        public async Task<bool> DeleteCart(string cartId)
+        {
+            var cart = await _context.Carts.FirstOrDefaultAsync(c => c.CartId == cartId);
+            if (cart != null)
+            {
+                _context.Carts.Remove(cart);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
+
+
+
+        public async Task<bool> DeleteCartItem(string cartItemId)
+        {
+            var cartItem = await _context.CartItems
+        .FirstOrDefaultAsync(ci => ci.CartItemId == cartItemId);
+
+            if (cartItem == null)
+            {
+                return false;
+            }
+
+            var cartId = cartItem.CartId;
+
+            _context.CartItems.Remove(cartItem);
+
+            await _context.SaveChangesAsync();
+
+            var hasItems = await _context.CartItems
+                .AnyAsync(ci => ci.CartId == cartId);
+
+            if (!hasItems)
+            {
+                await DeleteCart(cartId);
+            }
+            return true;
+        }
+
         public async Task<PagedResult<CartDto>> GetCartById(CartSearchFilter filter)
         {
             var query = _context.Carts.AsQueryable();
@@ -176,6 +216,11 @@ namespace Mirai.Infastructure.Repositories
         {
             _context.CartItems.RemoveRange(cartItem);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<CartItem?> GetByCartItemIdAsync(string id)
+        {
+            return await _context.CartItems.FirstOrDefaultAsync(item => item.CartItemId == id);
         }
     }
 }

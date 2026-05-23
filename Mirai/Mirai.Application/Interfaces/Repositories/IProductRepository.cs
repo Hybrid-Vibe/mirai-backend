@@ -13,6 +13,7 @@ namespace Mirai.Application.Interfaces.Repositories
     {
         Task<Product> CreateProduct(CreateProductDto createProductDto);
         Task<Product> UpdateProduct(string productId, CreateProductDto createProductDto);
+        Task<bool> UpdateProductStar(string productId, decimal RatingAvg, int RatingCount);
         Task<Product?> GetProductById(string productId);
         Task<List<ProductDto>> GetAllProducts();
         Task<PagedResult<GetAllProductsByFilterDto>> GetProductsByFilterAsync(ProductSearchFilter filter);

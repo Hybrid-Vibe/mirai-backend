@@ -17,5 +17,6 @@ namespace Mirai.Application.Interfaces.Repositories
         IPaymentRepository PaymentRepository { get; }
         ICartItemsRepository CartItemsRepository { get; }
         IAIImageRepository AIImageRepository { get; }
+        IReviewRepository ReviewRepository { get; }
     }
 }
