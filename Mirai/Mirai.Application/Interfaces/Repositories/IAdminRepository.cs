@@ -8,6 +8,7 @@ namespace Mirai.Application.Interfaces.Repositories;
 public interface IAdminRepository
 {
     Task<AdminDashboardDto> GetDashboardSummaryAsync(CancellationToken cancellationToken = default);
+    Task<AdminRevenueChartDto> GetRevenueChartAsync(string period, CancellationToken cancellationToken = default);
     Task<PagedResult<GetUserDto>> GetUsersPagedAsync(AdminUserFilter filter, CancellationToken cancellationToken = default);
     Task<GetUserDto?> GetUserByIdAsync(string userId, CancellationToken cancellationToken = default);
     Task<bool> UpdateUserAsync(string userId, AdminUpdateUserDto dto, CancellationToken cancellationToken = default);
@@ -25,4 +26,5 @@ public interface IAdminRepository
     Task<AdminShippingDto> CreateShippingAsync(AdminCreateShippingDto dto, CancellationToken cancellationToken = default);
     Task<bool> UpdateShippingAsync(string shippingId, AdminUpdateShippingDto dto, CancellationToken cancellationToken = default);
     Task<bool> SetProductActiveAsync(string productId, bool isActive, CancellationToken cancellationToken = default);
+    Task<bool> DeleteProductAsync(string productId, CancellationToken cancellationToken = default);
 }

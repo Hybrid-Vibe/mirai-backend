@@ -10,6 +10,7 @@ namespace Mirai.Application.Interfaces.Services;
 public interface IAdminService
 {
     Task<AdminDashboardDto> GetDashboardSummaryAsync(CancellationToken cancellationToken = default);
+    Task<AdminRevenueChartDto> GetRevenueChartAsync(string period, CancellationToken cancellationToken = default);
     Task<PagedResult<GetUserDto>> GetUsersAsync(AdminUserFilter filter, CancellationToken cancellationToken = default);
     Task<GetUserDto?> GetUserByIdAsync(string userId, CancellationToken cancellationToken = default);
     Task<GetUserDto> UpdateUserAsync(string userId, AdminUpdateUserDto dto, CancellationToken cancellationToken = default);
@@ -30,6 +31,7 @@ public interface IAdminService
     Task<AdminShippingDto> UpdateShippingAsync(string shippingId, AdminUpdateShippingDto dto, CancellationToken cancellationToken = default);
     Task DeactivateProductAsync(string productId, CancellationToken cancellationToken = default);
     Task ActivateProductAsync(string productId, CancellationToken cancellationToken = default);
+    Task DeleteProductAsync(string productId, CancellationToken cancellationToken = default);
     Task<PagedResult<AIImageDto>> GetAIImagesAsync(AdminAIImageFilter filter, CancellationToken cancellationToken = default);
     Task<AIImageDto> UpdateAIImageStatusAsync(string aiImageId, UpdateAIImageStatusDto dto, CancellationToken cancellationToken = default);
     Task DeleteAIImageAsync(string aiImageId, CancellationToken cancellationToken = default);

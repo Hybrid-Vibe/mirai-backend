@@ -26,6 +26,9 @@ public class AdminService : IAdminService
     public Task<AdminDashboardDto> GetDashboardSummaryAsync(CancellationToken cancellationToken = default)
         => _unitOfWork.AdminRepository.GetDashboardSummaryAsync(cancellationToken);
 
+    public Task<AdminRevenueChartDto> GetRevenueChartAsync(string period, CancellationToken cancellationToken = default)
+        => _unitOfWork.AdminRepository.GetRevenueChartAsync(period, cancellationToken);
+
     public Task<PagedResult<GetUserDto>> GetUsersAsync(AdminUserFilter filter, CancellationToken cancellationToken = default)
         => _unitOfWork.AdminRepository.GetUsersPagedAsync(filter, cancellationToken);
 
@@ -156,6 +159,13 @@ public class AdminService : IAdminService
     public async Task ActivateProductAsync(string productId, CancellationToken cancellationToken = default)
     {
         var updated = await _unitOfWork.AdminRepository.SetProductActiveAsync(productId, true, cancellationToken);
+        if (!updated)
+            throw new NotFoundException(nameof(Product), productId);
+    }
+
+    public async Task DeleteProductAsync(string productId, CancellationToken cancellationToken = default)
+    {
+        var updated = await _unitOfWork.AdminRepository.DeleteProductAsync(productId, cancellationToken);
         if (!updated)
             throw new NotFoundException(nameof(Product), productId);
     }

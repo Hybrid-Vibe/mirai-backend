@@ -28,6 +28,13 @@ public class AdminController : ControllerBase
         return Ok(summary);
     }
 
+    [HttpGet("dashboard/revenue-chart")]
+    public async Task<IActionResult> GetRevenueChart([FromQuery] string period = "week", CancellationToken cancellationToken = default)
+    {
+        var chart = await _adminService.GetRevenueChartAsync(period, cancellationToken);
+        return Ok(chart);
+    }
+
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers([FromQuery] AdminUserFilter filter, CancellationToken cancellationToken)
     {
@@ -168,6 +175,13 @@ public class AdminController : ControllerBase
     {
         await _adminService.ActivateProductAsync(productId, cancellationToken);
         return Ok("Product activated successfully");
+    }
+
+    [HttpDelete("products/{productId}")]
+    public async Task<IActionResult> DeleteProduct(string productId, CancellationToken cancellationToken)
+    {
+        await _adminService.DeleteProductAsync(productId, cancellationToken);
+        return Ok("Product deleted successfully");
     }
 
     [HttpGet("ai-images")]

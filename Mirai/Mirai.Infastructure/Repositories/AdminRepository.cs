@@ -46,6 +46,72 @@ public class AdminRepository : IAdminRepository
         };
     }
 
+    public async Task<AdminRevenueChartDto> GetRevenueChartAsync(string period, CancellationToken cancellationToken = default)
+    {
+        var paidStatus = PaymentStatus.Paid.ToString();
+        var isMonth = string.Equals(period, "month", StringComparison.OrdinalIgnoreCase);
+        var normalizedPeriod = isMonth ? "month" : "week";
+        var today = DateTime.UtcNow.Date;
+
+        if (isMonth)
+        {
+            var rangeStart = today.AddMonths(-11);
+            var rangeEnd = today.AddDays(1);
+
+            var revenueByMonth = await _context.Orders
+                .Where(o => o.PaymentStatus == paidStatus && o.CreatedAt >= rangeStart && o.CreatedAt < rangeEnd)
+                .GroupBy(o => new { o.CreatedAt.Year, o.CreatedAt.Month })
+                .Select(g => new
+                {
+                    g.Key.Year,
+                    g.Key.Month,
+                    Revenue = g.Sum(o => o.TotalAmount)
+                })
+                .ToListAsync(cancellationToken);
+
+            var points = new List<AdminRevenueChartPointDto>();
+            for (var i = 11; i >= 0; i--)
+            {
+                var monthStart = new DateTime(today.Year, today.Month, 1).AddMonths(-i);
+                var revenue = revenueByMonth
+                    .FirstOrDefault(x => x.Year == monthStart.Year && x.Month == monthStart.Month)
+                    ?.Revenue ?? 0m;
+
+                points.Add(new AdminRevenueChartPointDto
+                {
+                    Date = monthStart,
+                    Label = monthStart.ToString("yyyy-MM"),
+                    Revenue = revenue
+                });
+            }
+
+            return new AdminRevenueChartDto { Period = normalizedPeriod, Data = points };
+        }
+
+        var weekStart = today.AddDays(-6);
+        var weekEnd = today.AddDays(1);
+
+        var revenueByDay = await _context.Orders
+            .Where(o => o.PaymentStatus == paidStatus && o.CreatedAt >= weekStart && o.CreatedAt < weekEnd)
+            .GroupBy(o => o.CreatedAt.Date)
+            .Select(g => new { Date = g.Key, Revenue = g.Sum(o => o.TotalAmount) })
+            .ToListAsync(cancellationToken);
+
+        var weekPoints = new List<AdminRevenueChartPointDto>();
+        for (var day = weekStart; day <= today; day = day.AddDays(1))
+        {
+            var revenue = revenueByDay.FirstOrDefault(x => x.Date == day)?.Revenue ?? 0m;
+            weekPoints.Add(new AdminRevenueChartPointDto
+            {
+                Date = day,
+                Label = day.ToString("yyyy-MM-dd"),
+                Revenue = revenue
+            });
+        }
+
+        return new AdminRevenueChartDto { Period = normalizedPeriod, Data = weekPoints };
+    }
+
     public async Task<PagedResult<GetUserDto>> GetUsersPagedAsync(AdminUserFilter filter, CancellationToken cancellationToken = default)
     {
         var query = _context.Users.AsQueryable();
@@ -507,4 +573,7 @@ public class AdminRepository : IAdminRepository
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    public Task<bool> DeleteProductAsync(string productId, CancellationToken cancellationToken = default)
+        => SetProductActiveAsync(productId, false, cancellationToken);
 }
