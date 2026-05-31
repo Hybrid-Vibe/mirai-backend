@@ -15,5 +15,6 @@ namespace Mirai.Application.Interfaces.Repositories
         Task MarkPaymentFailed(string orderId);
         Task MarkAsPaid(string orderId);
         Task<Order> GetByIdAsync(string id);
+        Task<Order> GetByUserIdAsync(string userId);
     }
 }
