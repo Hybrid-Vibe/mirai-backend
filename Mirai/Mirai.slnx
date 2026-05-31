@@ -1,7 +1,0 @@
-<Solution>
-  <Project Path="Mirai.Application/Mirai.Application.csproj" />
-  <Project Path="Mirai.Domain/Mirai.Domain.csproj" />
-  <Project Path="Mirai.Infastructure/Mirai.Infastructure.csproj" />
-  <Project Path="Mirai.Test/Mirai.Test.csproj" />
-  <Project Path="Mirai/Mirai.csproj" />
-</Solution>
