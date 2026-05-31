@@ -42,8 +42,8 @@ namespace Mirai.Infastructure.Repositories
 
             await strategy.ExecuteAsync(async () =>
             {
-            using var transaction =
-                await _context.Database.BeginTransactionAsync();
+                using var transaction =
+                    await _context.Database.BeginTransactionAsync();
 
                 try
                 {
@@ -68,7 +68,7 @@ namespace Mirai.Infastructure.Repositories
                         VariantId = null,
                         ImageUrl = x.ImageUrl,
                         CreatedAt = DateTime.Now,
-                    }).ToList() ;
+                    }).ToList();
 
                     await _context.AddRangeAsync(productImages);
 
@@ -84,10 +84,10 @@ namespace Mirai.Infastructure.Repositories
                             PhoneModel = variantDto.PhoneModel,
                             Price = variantDto.Price,
                             IsActive = true,
-                            CreatedAt= DateTime.Now,
+                            CreatedAt = DateTime.Now,
                         };
 
-                        await _context.AddRangeAsync (variant);
+                        await _context.AddRangeAsync(variant);
 
                         var variantImage = new ProductImage()
                         {
@@ -105,7 +105,8 @@ namespace Mirai.Infastructure.Repositories
                     await transaction.CommitAsync();
 
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     await transaction.RollbackAsync();
                     throw;
                 }
@@ -132,6 +133,41 @@ namespace Mirai.Infastructure.Repositories
             return products;
         }
 
+        public async Task<List<GetFlashSaleProductsDto>> GetFlashSaleProductsAsync()
+        {
+            var now = DateTime.Now;
+            return await _context.FlashSaleItems
+                .Where(fsi =>
+                    fsi.IsActive == true &&
+                    fsi.FlashSale!.IsActive == true &&
+                    now >= fsi.FlashSale.StartTime &&
+                    now <= fsi.FlashSale.EndTime
+                )
+                .Select(fsi => new GetFlashSaleProductsDto
+                {
+                    ProductId = fsi.Variant!.Product!.ProductId,
+                    ProductName = fsi.Variant.Product.Name,
+
+                    VariantId = fsi.VariantId,
+                    Color = fsi.Variant.Color,
+                    PhoneModel = fsi.Variant.PhoneModel,
+
+                    OriginalPrice = (decimal)fsi.Variant.Price,
+                    FlashSalePrice = fsi.SalePrice,
+
+                    Stock = (int)fsi.Variant.Stock,
+
+                    ImageUrl = fsi.Variant.Product.ProductImages
+                        .Select(x => x.ImageUrl)
+                        .FirstOrDefault(),
+
+                    StartTime = fsi.FlashSale.StartTime,
+                    EndTime = fsi.FlashSale.EndTime
+                })
+                .ToListAsync();
+        }
+
+
         public async Task<Product?> GetProductById(string productId)
         {
             return await _context.Products.FirstOrDefaultAsync(x => x.ProductId == productId);
@@ -139,6 +175,7 @@ namespace Mirai.Infastructure.Repositories
 
         public async Task<PagedResult<GetAllProductsByFilterDto>> GetProductsByFilterAsync(ProductSearchFilter filter)
         {
+            var now = DateTime.Now;
             var query = _context.Products.AsQueryable()
                 .Where(p => p.IsActive == true)
                 .Select(p => new GetAllProductsByFilterDto
@@ -160,7 +197,15 @@ namespace Mirai.Infastructure.Repositories
                             Color = v.Color,
                             PhoneModel = v.PhoneModel,
                             Price = v.Price,
-                            Stock = v.Stock
+                            Stock = v.Stock,
+                            FlashSalePrice = _context.FlashSaleItems
+                            .Where(fsi => fsi.VariantId == v.VariantId && 
+                            fsi.IsActive == true && 
+                            fsi.FlashSale!.IsActive == true 
+                            && now >= fsi.FlashSale.StartTime && now <= fsi.FlashSale.EndTime).Select(fsi => (decimal?)fsi.SalePrice).FirstOrDefault(),
+                            IsFlashSale = _context.FlashSaleItems.Any(fsi => fsi.VariantId == v.VariantId && fsi.IsActive == true && fsi.FlashSale!.IsActive == true && now >= fsi.FlashSale.StartTime && now <= fsi.FlashSale.EndTime),
+                            FlashSaleStartTime = _context.FlashSaleItems.Where(fsi => fsi.VariantId == v.VariantId && fsi.IsActive == true && fsi.FlashSale!.IsActive == true).Select(fsi => (DateTime?)fsi.FlashSale.StartTime).FirstOrDefault(),
+                            FlashSaleEndTime = _context.FlashSaleItems.Where(fsi => fsi.VariantId == v.VariantId && fsi.IsActive == true && fsi.FlashSale!.IsActive == true).Select(fsi => (DateTime?)fsi.FlashSale.EndTime).FirstOrDefault()
                         })
                         .ToList(),
                     ProductImages = p.ProductImages
@@ -223,13 +268,9 @@ namespace Mirai.Infastructure.Repositories
 */
             var totalCount = await query.CountAsync();
 
-            /*var colors = await query
-                .SelectMany(u => u.Variants.Select(v => v.Color))
-                .Distinct()
-                .ToListAsync();*/
 
             var items = await query
-                .Skip((filter.PageNumber - 1) * filter.PageSize)    
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
                 .Take(filter.PageSize)
                 .ToListAsync();
 
@@ -237,9 +278,8 @@ namespace Mirai.Infastructure.Repositories
             {
                 Items = items,
                 TotalCount = totalCount,
-                PageNumber = filter.PageNumber,     
+                PageNumber = filter.PageNumber,
                 PageSize = filter.PageSize,
-                //Colors = colors
             };
 
         }

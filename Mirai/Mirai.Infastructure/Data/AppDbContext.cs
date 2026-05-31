@@ -31,6 +31,10 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Category> Categories { get; set; }
 
+    public virtual DbSet<FlashSale> FlashSales { get; set; }
+
+    public virtual DbSet<FlashSaleItem> FlashSaleItems { get; set; }
+
     public virtual DbSet<Order> Orders { get; set; }
 
     public virtual DbSet<OrderItem> OrderItems { get; set; }
@@ -63,7 +67,6 @@ public partial class AppDbContext : DbContext
     {
         optionsBuilder.UseNpgsql(GetConnectionString());
     }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -328,6 +331,81 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("updated_at");
         });
 
+        modelBuilder.Entity<FlashSale>(entity =>
+        {
+            entity.HasKey(e => e.FlashSaleId).HasName("flash_sales_pkey");
+
+            entity.ToTable("flash_sales");
+
+            entity.Property(e => e.FlashSaleId)
+                .HasMaxLength(40)
+                .HasColumnName("flash_sale_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.EndTime)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("end_time");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.StartTime)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("start_time");
+            entity.Property(e => e.Title)
+                .HasMaxLength(255)
+                .HasColumnName("title");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
+        });
+
+        modelBuilder.Entity<FlashSaleItem>(entity =>
+        {
+            entity.HasKey(e => e.FlashSaleItemId).HasName("flash_sale_items_pkey");
+
+            entity.ToTable("flash_sale_items");
+
+            entity.HasIndex(e => new { e.FlashSaleId, e.VariantId }, "flash_sale_items_flash_sale_id_variant_id_key").IsUnique();
+
+            entity.Property(e => e.FlashSaleItemId)
+                .HasMaxLength(40)
+                .HasColumnName("flash_sale_item_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.FlashSaleId)
+                .HasMaxLength(40)
+                .HasColumnName("flash_sale_id");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.PerUserLimit)
+                .HasDefaultValue(1)
+                .HasColumnName("per_user_limit");
+            entity.Property(e => e.QuantityLimit).HasColumnName("quantity_limit");
+            entity.Property(e => e.QuantitySold).HasColumnName("quantity_sold");
+            entity.Property(e => e.SalePrice)
+                .HasPrecision(10, 2)
+                .HasColumnName("sale_price");
+            entity.Property(e => e.VariantId)
+                .HasMaxLength(40)
+                .HasColumnName("variant_id");
+
+            entity.HasOne(d => d.FlashSale).WithMany(p => p.FlashSaleItems)
+                .HasForeignKey(d => d.FlashSaleId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("flash_sale_items_flash_sale_id_fkey");
+
+            entity.HasOne(d => d.Variant).WithMany(p => p.FlashSaleItems)
+                .HasForeignKey(d => d.VariantId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("flash_sale_items_variant_id_fkey");
+        });
+
         modelBuilder.Entity<Order>(entity =>
         {
             entity.HasKey(e => e.OrderId).HasName("orders_pkey");
@@ -405,6 +483,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.DiscountAmount)
                 .HasPrecision(10, 2)
                 .HasColumnName("discount_amount");
+            entity.Property(e => e.FlashSaleItemId)
+                .HasMaxLength(40)
+                .HasColumnName("flash_sale_item_id");
             entity.Property(e => e.OrderId)
                 .HasMaxLength(40)
                 .HasColumnName("order_id");
@@ -424,6 +505,10 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.VariantName)
                 .HasMaxLength(255)
                 .HasColumnName("variant_name");
+
+            entity.HasOne(d => d.FlashSaleItem).WithMany(p => p.OrderItems)
+                .HasForeignKey(d => d.FlashSaleItemId)
+                .HasConstraintName("fk_order_items_flash_sale_item");
 
             entity.HasOne(d => d.Order).WithMany(p => p.OrderItems)
                 .HasForeignKey(d => d.OrderId)
