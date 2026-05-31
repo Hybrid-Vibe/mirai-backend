@@ -1,4 +1,5 @@
 using Mirai.Application.DTO;
+using Mirai.Domain.Enum;
 
 namespace Mirai.Application.DTO.Admin;
 
@@ -15,8 +16,8 @@ public class AdminOrderDetailDto
     public decimal? TaxAmount { get; set; }
     public decimal TotalAmount { get; set; }
     public string? Currency { get; set; }
-    public string? Status { get; set; }
-    public string? PaymentStatus { get; set; }
+    public OrderStatus Status { get; set; }
+    public PaymentStatus PaymentStatus { get; set; }
     public string? Note { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? PlacedAt { get; set; }

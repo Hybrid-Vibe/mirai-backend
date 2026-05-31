@@ -21,11 +21,11 @@ public class AdminRepository : IAdminRepository
 
     public async Task<AdminDashboardDto> GetDashboardSummaryAsync(CancellationToken cancellationToken = default)
     {
-        var paidStatus = PaymentStatus.Paid.ToString();
+        var paidStatus = PaymentStatus.Paid;
         var pendingOrderStatuses = new[]
         {
-            OrderStatus.Created.ToString(),
-            OrderStatus.Confirmed.ToString()
+            OrderStatus.Created,
+            OrderStatus.Confirmed
         };
 
         return new AdminDashboardDto
@@ -34,10 +34,10 @@ public class AdminRepository : IAdminRepository
             ActiveUsers = await _context.Users.CountAsync(u => u.IsActive, cancellationToken),
             TotalOrders = await _context.Orders.CountAsync(cancellationToken),
             PendingOrders = await _context.Orders.CountAsync(
-                o => o.Status != null && pendingOrderStatuses.Contains(o.Status),
+                o => o.Status != null && pendingOrderStatuses.Contains((OrderStatus)o.Status),
                 cancellationToken),
             TotalRevenue = await _context.Orders
-                .Where(o => o.PaymentStatus == paidStatus)
+                .Where(o => o.PaymentStatus == (int)paidStatus)
                 .SumAsync(o => o.TotalAmount, cancellationToken),
             TotalProducts = await _context.Products.CountAsync(cancellationToken),
             ActiveProducts = await _context.Products.CountAsync(p => p.IsActive, cancellationToken),
@@ -48,10 +48,10 @@ public class AdminRepository : IAdminRepository
 
     public async Task<AdminRevenueChartDto> GetRevenueChartAsync(string period, CancellationToken cancellationToken = default)
     {
-        var paidStatus = PaymentStatus.Paid.ToString();
+        var paidStatus = PaymentStatus.Paid;
         var isMonth = string.Equals(period, "month", StringComparison.OrdinalIgnoreCase);
         var normalizedPeriod = isMonth ? "month" : "week";
-        var today = DateTime.UtcNow.Date;
+        var today = DateTime.Now.Date;
 
         if (isMonth)
         {
@@ -59,7 +59,7 @@ public class AdminRepository : IAdminRepository
             var rangeEnd = today.AddDays(1);
 
             var revenueByMonth = await _context.Orders
-                .Where(o => o.PaymentStatus == paidStatus && o.CreatedAt >= rangeStart && o.CreatedAt < rangeEnd)
+                .Where(o => o.PaymentStatus == (int)paidStatus && o.CreatedAt >= rangeStart && o.CreatedAt < rangeEnd)
                 .GroupBy(o => new { o.CreatedAt.Year, o.CreatedAt.Month })
                 .Select(g => new
                 {
@@ -92,7 +92,7 @@ public class AdminRepository : IAdminRepository
         var weekEnd = today.AddDays(1);
 
         var revenueByDay = await _context.Orders
-            .Where(o => o.PaymentStatus == paidStatus && o.CreatedAt >= weekStart && o.CreatedAt < weekEnd)
+            .Where(o => o.PaymentStatus == (int)paidStatus && o.CreatedAt >= weekStart && o.CreatedAt < weekEnd)
             .GroupBy(o => o.CreatedAt.Date)
             .Select(g => new { Date = g.Key, Revenue = g.Sum(o => o.TotalAmount) })
             .ToListAsync(cancellationToken);
@@ -185,7 +185,7 @@ public class AdminRepository : IAdminRepository
 
         if (dto.FullName != null) user.FullName = dto.FullName;
         if (dto.Phone != null) user.Phone = dto.Phone;
-        user.UpdatedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.Now;
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -196,7 +196,7 @@ public class AdminRepository : IAdminRepository
         if (user == null) return false;
 
         user.RoleId = roleId;
-        user.UpdatedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.Now;
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -224,12 +224,11 @@ public class AdminRepository : IAdminRepository
             .Include(o => o.OrderItems)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(filter.Status))
-            query = query.Where(o => o.Status == filter.Status);
+        if (filter.Status.HasValue)
+            query = query.Where(o => o.Status == (int)filter.Status.Value);
 
-        if (!string.IsNullOrWhiteSpace(filter.PaymentStatus))
-            query = query.Where(o => o.PaymentStatus == filter.PaymentStatus);
-
+        if (filter.PaymentStatus.HasValue)
+            query = query.Where(o => o.PaymentStatus == (int)filter.PaymentStatus.Value);
         if (!string.IsNullOrWhiteSpace(filter.UserId))
             query = query.Where(o => o.UserId == filter.UserId);
 
@@ -261,8 +260,8 @@ public class AdminRepository : IAdminRepository
                 UserEmail = o.User.Email,
                 UserFullName = o.User.FullName,
                 TotalAmount = o.TotalAmount,
-                Status = o.Status,
-                PaymentStatus = o.PaymentStatus,
+                Status = (OrderStatus)o.Status,
+                PaymentStatus = (PaymentStatus)o.PaymentStatus,
                 CreatedAt = o.CreatedAt,
                 ItemCount = o.OrderItems.Count
             })
@@ -301,8 +300,8 @@ public class AdminRepository : IAdminRepository
             TaxAmount = order.TaxAmount,
             TotalAmount = order.TotalAmount,
             Currency = order.Currency,
-            Status = order.Status,
-            PaymentStatus = order.PaymentStatus,
+            Status = (OrderStatus)order.Status,
+            PaymentStatus = (PaymentStatus)order.PaymentStatus,
             Note = order.Note,
             CreatedAt = order.CreatedAt,
             PlacedAt = order.PlacedAt,
@@ -352,8 +351,8 @@ public class AdminRepository : IAdminRepository
             .Include(p => p.Order)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(filter.Status))
-            query = query.Where(p => p.Status == filter.Status);
+        if (filter.Status.HasValue)
+            query = query.Where(p => p.Status == filter.Status.Value);
 
         if (!string.IsNullOrWhiteSpace(filter.OrderId))
             query = query.Where(p => p.OrderId == filter.OrderId);
@@ -462,8 +461,8 @@ public class AdminRepository : IAdminRepository
         if (!string.IsNullOrWhiteSpace(filter.OrderId))
             query = query.Where(s => s.OrderId == filter.OrderId);
 
-        if (!string.IsNullOrWhiteSpace(filter.ShippingStatus))
-            query = query.Where(s => s.ShippingStatus == filter.ShippingStatus);
+        if (filter.ShippingStatus.HasValue)
+            query = query.Where(s => s.ShippingStatus == filter.ShippingStatus.Value);
 
         var totalCount = await query.CountAsync(cancellationToken);
 
@@ -533,7 +532,7 @@ public class AdminRepository : IAdminRepository
             ShippingId = Guid.NewGuid().ToString(),
             OrderId = dto.OrderId,
             AddressId = dto.AddressId,
-            ShippingStatus = dto.ShippingStatus ?? "Pending",
+            ShippingStatus = dto.ShippingStatus ?? 1,
             Carrier = dto.Carrier,
             TrackingCode = dto.TrackingCode,
             ShippingFee = dto.ShippingFee,
