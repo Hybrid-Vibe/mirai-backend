@@ -22,7 +22,8 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Mirai API",
-        Version = "v1"
+        Version = "v1",
+        Description = "Includes Admin APIs at /api/admin (requires JWT with Role = 1)."
     });
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
