@@ -57,5 +57,10 @@ namespace Mirai.Infastructure.Services
             }
             return await _unitOfWork.ProductRepository.UpdateProduct(productId, createProductDto);
         }
+
+        public async Task<List<GetFlashSaleProductsDto>> GetFlashSaleProductsAsync()
+        {
+            return await _unitOfWork.ProductRepository.GetFlashSaleProductsAsync();
+        }
     }
 }

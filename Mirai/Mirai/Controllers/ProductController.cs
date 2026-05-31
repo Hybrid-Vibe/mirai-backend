@@ -64,5 +64,12 @@ namespace Mirai.Controllers
             var products = await _productService.GetProductsByFilterAsync(filter);
             return Ok(products);
         }
+
+        [HttpGet("Flash-Sale-Products")]
+        public async Task<IActionResult> GetFlashSaleProductsAsync()
+        {
+            var flashSaleProducts = await _productService.GetFlashSaleProductsAsync();
+            return Ok(flashSaleProducts);
+        }
     }
 }

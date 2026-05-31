@@ -14,6 +14,7 @@ namespace Mirai.Application.Interfaces.Services
         Task<Product> UpdateProduct(string productId, CreateProductDto createProductDto);
         Task<Product?> GetProductById(string productId);
         Task<List<ProductDto>> GetAllProducts();
+        Task<List<GetFlashSaleProductsDto>> GetFlashSaleProductsAsync();
         Task<PagedResult<GetAllProductsByFilterDto>> GetProductsByFilterAsync(ProductSearchFilter filter);
         Task CreateAllProducts(CreateProductRequestDto request);
     }

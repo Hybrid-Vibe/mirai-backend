@@ -18,5 +18,6 @@ namespace Mirai.Application.Interfaces.Repositories
         ICartItemsRepository CartItemsRepository { get; }
         IAIImageRepository AIImageRepository { get; }
         IReviewRepository ReviewRepository { get; }
+        IFlashSaleRepository FlashSaleRepository { get; }
     }
 }

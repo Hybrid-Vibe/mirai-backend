@@ -27,6 +27,10 @@ public partial class OrderItem
 
     public string? CustomDesignConfig { get; set; }
 
+    public string? FlashSaleItemId { get; set; }
+
+    public virtual FlashSaleItem? FlashSaleItem { get; set; }
+
     public virtual Order Order { get; set; } = null!;
 
     public virtual ProductVariant Variant { get; set; } = null!;
