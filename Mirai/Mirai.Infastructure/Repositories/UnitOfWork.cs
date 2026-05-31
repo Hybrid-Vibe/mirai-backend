@@ -32,8 +32,6 @@ public class UnitOfWork : IUnitOfWork
 
     public IAIImageRepository AIImageRepository { get; }
 
-    public IAdminRepository AdminRepository { get; }
-
     public UnitOfWork(AppDbContext context)
     {
         _context = context;
@@ -48,7 +46,6 @@ public class UnitOfWork : IUnitOfWork
         PaymentRepository = new PaymentRepository(_context);
         CartItemsRepository = new CartItemsRepository(_context);
         AIImageRepository = new AIImageRepository(_context);
-        AdminRepository = new AdminRepository(_context);
     }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

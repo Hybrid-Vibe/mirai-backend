@@ -12,7 +12,6 @@ namespace Mirai.Application.Interfaces.Repositories
         Task<Payment> CreatePaymentByCOD(PaymentByCODDto paymentByCODDto);
         Task<Payment> CreatePaymentByVNPay(PaymentDto paymentDto);
         Task UpdatePaymentStatus(string orderId, PaymentStatusInPayment newStatus);
-        Task UpdatePaymentStatusByPaymentId(string paymentId, PaymentStatusInPayment newStatus);
         Task<Payment> GetByIdAsync(string id);
     }
 }

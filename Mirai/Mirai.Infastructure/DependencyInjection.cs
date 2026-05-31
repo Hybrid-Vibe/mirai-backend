@@ -52,7 +52,6 @@ namespace Mirai.Infastructure
             services.AddScoped<IPaymentService, PaymentService>();
             services.AddScoped<ICartItemsService, CartItemsService>();
             services.AddScoped<IAIImageService, AIImageService>();
-            services.AddScoped<IAdminService, AdminService>();
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
             return services;

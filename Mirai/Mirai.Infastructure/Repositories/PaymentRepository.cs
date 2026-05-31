@@ -55,25 +55,6 @@ namespace Mirai.Infastructure.Repositories
             return payment;
         }
 
-        public async Task UpdatePaymentStatusByPaymentId(string paymentId, PaymentStatusInPayment newStatus)
-        {
-            var payment = await _context.Payments
-                .FirstOrDefaultAsync(p => p.PaymentId == paymentId)
-                ?? throw new Exception("Payment not found");
-
-            if (!Enum.TryParse(payment.Status, out PaymentStatusInPayment currentStatus))
-            {
-                throw new Exception($"Invalid payment status in DB: {payment.Status}");
-            }
-            if (!PaymentStateValidator.CanUpdatePaymentStatus(currentStatus, newStatus))
-                throw new Exception($"Invalid payment status transition: {payment.Status} -> {newStatus}");
-
-            payment.Status = newStatus.ToString();
-            payment.UpdatedAt = DateTime.Now;
-
-            await _context.SaveChangesAsync();
-        }
-
         public async Task UpdatePaymentStatus(string orderId, PaymentStatusInPayment newStatus)
         {
             var payment = await _context.Payments
