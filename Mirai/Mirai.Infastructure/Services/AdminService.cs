@@ -189,16 +189,16 @@ public class AdminService : IAdminService
     {
         var exists = await _unitOfWork.AIImageRepository.ExistsAsync(aiImageId, cancellationToken);
         if (!exists)
-            throw new NotFoundException(nameof(AIImage), aiImageId);
+            throw new NotFoundException(nameof(AiImage), aiImageId);
 
         var deleted = await _unitOfWork.AIImageRepository.AdminDeleteAsync(aiImageId, cancellationToken);
         if (deleted)
             await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    private static AIImageDto MapAIImage(AIImage aiImage) => new()
+    private static AIImageDto MapAIImage(AiImage aiImage) => new()
     {
-        AIImageId = aiImage.AIImageId,
+        AIImageId = aiImage.AiImageId,
         UserId = aiImage.UserId,
         Prompt = aiImage.Prompt,
         NegativePrompt = aiImage.NegativePrompt,
@@ -207,7 +207,7 @@ public class AdminService : IAdminService
         Style = aiImage.Style,
         Width = aiImage.Width,
         Height = aiImage.Height,
-        Status = aiImage.Status,
+        Status = (Domain.Enums.AIImageStatus)aiImage.Status,
         ErrorMessage = aiImage.ErrorMessage,
         CreatedAt = aiImage.CreatedAt,
         UpdatedAt = aiImage.UpdatedAt

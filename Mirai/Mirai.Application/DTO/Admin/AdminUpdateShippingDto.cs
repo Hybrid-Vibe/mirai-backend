@@ -2,7 +2,7 @@ namespace Mirai.Application.DTO.Admin;
 
 public class AdminUpdateShippingDto
 {
-    public string? ShippingStatus { get; set; }
+    public int? ShippingStatus { get; set; }
     public string? Carrier { get; set; }
     public string? TrackingCode { get; set; }
     public decimal? ShippingFee { get; set; }

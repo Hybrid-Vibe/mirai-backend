@@ -9,11 +9,11 @@ namespace Mirai.Application.Interfaces.Repositories;
 
 public interface IAIImageRepository
 {
-    Task<AIImage?> GetByIdAsync(string id, CancellationToken cancellationToken = default);
-    Task<List<AIImage>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default);
-    Task<PagedResult<AIImage>> GetAllPagedAsync(AdminAIImageFilter filter, CancellationToken cancellationToken = default);
-    Task<AIImage> AddAsync(AIImage aiImage, CancellationToken cancellationToken = default);
-    Task UpdateAsync(AIImage aiImage, CancellationToken cancellationToken = default);
+    Task<AiImage?> GetByIdAsync(string id, CancellationToken cancellationToken = default);
+    Task<List<AiImage>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default);
+    Task<PagedResult<AiImage>> GetAllPagedAsync(AdminAIImageFilter filter, CancellationToken cancellationToken = default);
+    Task<AiImage> AddAsync(AiImage aiImage, CancellationToken cancellationToken = default);
+    Task UpdateAsync(AiImage aiImage, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(string id, string userId, CancellationToken cancellationToken = default);
     Task<bool> AdminDeleteAsync(string id, CancellationToken cancellationToken = default);
     Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default);

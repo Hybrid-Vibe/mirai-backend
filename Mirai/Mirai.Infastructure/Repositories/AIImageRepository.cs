@@ -48,9 +48,9 @@ public class AIImageRepository : IAIImageRepository
         return Task.CompletedTask;
     }
 
-    public async Task<PagedResult<AIImage>> GetAllPagedAsync(AdminAIImageFilter filter, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<AiImage>> GetAllPagedAsync(AdminAIImageFilter filter, CancellationToken cancellationToken = default)
     {
-        var query = _context.AIImages.AsNoTracking().AsQueryable();
+        var query = _context.AiImages.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(filter.UserId))
             query = query.Where(ai => ai.UserId == filter.UserId);
@@ -66,7 +66,7 @@ public class AIImageRepository : IAIImageRepository
             .Take(filter.PageSize)
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<AIImage>
+        return new PagedResult<AiImage>
         {
             Items = items,
             TotalCount = totalCount,
@@ -89,13 +89,13 @@ public class AIImageRepository : IAIImageRepository
 
     public async Task<bool> AdminDeleteAsync(string id, CancellationToken cancellationToken = default)
     {
-        var aiImage = await _context.AIImages
-            .FirstOrDefaultAsync(ai => ai.AIImageId == id, cancellationToken);
+        var aiImage = await _context.AiImages
+            .FirstOrDefaultAsync(ai => ai.AiImageId == id, cancellationToken);
 
         if (aiImage == null)
             return false;
 
-        _context.AIImages.Remove(aiImage);
+        _context.AiImages.Remove(aiImage);
         return true;
     }
 

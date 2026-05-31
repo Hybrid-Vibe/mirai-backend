@@ -61,14 +61,15 @@ namespace Mirai.Infastructure.Repositories
                 .FirstOrDefaultAsync(p => p.PaymentId == paymentId)
                 ?? throw new Exception("Payment not found");
 
-            if (!Enum.TryParse(payment.Status, out PaymentStatusInPayment currentStatus))
+            if (!Enum.IsDefined(typeof(PaymentStatusInPayment), payment.Status))
             {
                 throw new Exception($"Invalid payment status in DB: {payment.Status}");
             }
+            var currentStatus = (PaymentStatusInPayment)payment.Status; 
             if (!PaymentStateValidator.CanUpdatePaymentStatus(currentStatus, newStatus))
                 throw new Exception($"Invalid payment status transition: {payment.Status} -> {newStatus}");
 
-            payment.Status = newStatus.ToString();
+            payment.Status = (int)newStatus;
             payment.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
