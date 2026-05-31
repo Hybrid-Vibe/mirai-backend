@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Mirai.Application.Interfaces.Services;
 using Mirai.Domain.Entities;
@@ -13,11 +14,30 @@ namespace Mirai.Infastructure.Services
     public class JwtTokenGenerator : IJwtTokenGenerator
     {
         private readonly IConfiguration configuration;
-        public JwtTokenGenerator(IConfiguration configuration)
+        private readonly IMemoryCache _cache;
+        public JwtTokenGenerator(IConfiguration configuration, IMemoryCache cache)
         {
             this.configuration = configuration;
+            this._cache = cache;
         }
-         public string GenerateToken(User user)
+
+        public Task BlacklistTokenAsync(string token)
+        {
+            var expiry = TimeSpan.FromHours(3);
+
+            _cache.Set(token, true, expiry);
+
+            return Task.CompletedTask;
+        }
+
+        public Task<bool> IsBlacklistedAsync(string token)
+        {
+            var exists = _cache.TryGetValue(token, out _);
+
+            return Task.FromResult(exists);
+        }
+
+        public string GenerateToken(User user)
         {
             var claims = new[]
             {
@@ -36,5 +56,6 @@ namespace Mirai.Infastructure.Services
                 signingCredentials: creds);
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
     }
 }

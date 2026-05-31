@@ -1,9 +1,12 @@
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Mirai.Infastructure;
 using Mirai.MiddleWare;
+using System.Security.Claims;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,25 +64,80 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
+var jwtKey = builder.Configuration["Jwt:Key"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+var supabaseIssuer = builder.Configuration["Supabase:Issuer"];
+var jwksUrl = builder.Configuration["Supabase:JwksUrl"];
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
+
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty)
-            )
+                Encoding.UTF8.GetBytes(jwtKey!)
+            ),
+
+            ValidateIssuer = true,
+
+            ValidIssuers = new[]
+            {
+                jwtIssuer,
+                supabaseIssuer
+            },
+
+            ValidateAudience = true,
+
+            ValidAudiences = new[]
+            {
+                jwtAudience,
+                "authenticated"
+            },
+
+            ValidateLifetime = true,
+
+            ClockSkew = TimeSpan.Zero,
+
+            NameClaimType = ClaimTypes.NameIdentifier
+        };
+
+        options.ConfigurationManager =
+            new ConfigurationManager<OpenIdConnectConfiguration>(
+                $"{supabaseIssuer}/.well-known/openid-configuration",
+                new OpenIdConnectConfigurationRetriever()
+            );
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = context =>
+            {
+                var identity = context.Principal?.Identity as ClaimsIdentity;
+
+                if (identity != null)
+                {
+                    var email = context.Principal?.FindFirst("email")?.Value;
+
+                    if (!string.IsNullOrEmpty(email))
+                    {
+                        identity.AddClaim(
+                            new Claim(ClaimTypes.Name, email)
+                        );
+                    }
+                }
+
+                return Task.CompletedTask;
+            }
         };
     });
 
+
 builder.Services.AddAuthorization();
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
@@ -96,8 +154,10 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAll");
 app.UseStaticFiles();
 app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<JwtBlacklistMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
+

@@ -19,6 +19,10 @@ public partial class CartItem
 
     public DateTime? UpdatedAt { get; set; }
 
+    public string? CustomImageUrl { get; set; }
+
+    public string? CustomDesignConfig { get; set; }
+
     public virtual Cart Cart { get; set; } = null!;
 
     public virtual ProductVariant Variant { get; set; } = null!;

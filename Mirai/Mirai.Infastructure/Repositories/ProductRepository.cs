@@ -26,7 +26,6 @@ namespace Mirai.Infastructure.Repositories
                 ProductId = Guid.NewGuid().ToString(),
                 Name = createProductDto.Name,
                 Description = createProductDto.Description,
-                Price = createProductDto.Price,
                 CategoryId = createProductDto.CategoryId,
                 BrandId = createProductDto.BrandId,
                 IsActive = true,
@@ -37,6 +36,83 @@ namespace Mirai.Infastructure.Repositories
             return product;
         }
 
+        public async Task CreateProduct(CreateProductRequestDto request)
+        {
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                using var transaction =
+                    await _context.Database.BeginTransactionAsync();
+
+                try
+                {
+                    var productId = Guid.NewGuid().ToString();
+                    var product = new Product()
+                    {
+                        ProductId = productId,
+                        Name = request.Name,
+                        Description = request.Description,
+                        CategoryId = request.CategoryId,
+                        BrandId = request.BrandId,
+                        IsActive = true,
+                        CreatedAt = DateTime.Now,
+                    };
+
+                    await _context.AddAsync(product);
+
+                    var productImages = request.Images.Select(x => new ProductImage
+                    {
+                        ImageId = Guid.NewGuid().ToString(),
+                        ProductId = productId,
+                        VariantId = null,
+                        ImageUrl = x.ImageUrl,
+                        CreatedAt = DateTime.Now,
+                    }).ToList();
+
+                    await _context.AddRangeAsync(productImages);
+
+                    //variant
+                    foreach (var variantDto in request.Variants)
+                    {
+                        var variantId = Guid.NewGuid().ToString();
+                        var variant = new ProductVariant()
+                        {
+                            VariantId = variantId,
+                            ProductId = productId,
+                            Color = variantDto.Color,
+                            PhoneModel = variantDto.PhoneModel,
+                            Price = variantDto.Price,
+                            IsActive = true,
+                            CreatedAt = DateTime.Now,
+                        };
+
+                        await _context.AddRangeAsync(variant);
+
+                        var variantImage = new ProductImage()
+                        {
+                            ImageId = Guid.NewGuid().ToString(),
+                            ProductId = productId,
+                            VariantId = variantId,
+                            ImageUrl = variantDto.ImageUrl,
+                            IsPrimary = false,
+                            CreatedAt = DateTime.Now,
+                        };
+                        await _context.AddRangeAsync(variantImage);
+
+                    }
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
+        }
+
         public async Task<List<ProductDto>> GetAllProducts()
         {
             var products = await _context.Products.Select(p => new ProductDto
@@ -44,7 +120,6 @@ namespace Mirai.Infastructure.Repositories
                 ProductId = p.ProductId,
                 Name = p.Name,
                 Description = p.Description,
-                Price = p.Price,
                 CategoryId = p.CategoryId,
                 CategoryName = p.Category!.Name,
                 BrandId = p.BrandId,
@@ -58,6 +133,41 @@ namespace Mirai.Infastructure.Repositories
             return products;
         }
 
+        public async Task<List<GetFlashSaleProductsDto>> GetFlashSaleProductsAsync()
+        {
+            var now = DateTime.Now;
+            return await _context.FlashSaleItems
+                .Where(fsi =>
+                    fsi.IsActive == true &&
+                    fsi.FlashSale!.IsActive == true &&
+                    now >= fsi.FlashSale.StartTime &&
+                    now <= fsi.FlashSale.EndTime
+                )
+                .Select(fsi => new GetFlashSaleProductsDto
+                {
+                    ProductId = fsi.Variant!.Product!.ProductId,
+                    ProductName = fsi.Variant.Product.Name,
+
+                    VariantId = fsi.VariantId,
+                    Color = fsi.Variant.Color,
+                    PhoneModel = fsi.Variant.PhoneModel,
+
+                    OriginalPrice = (decimal)fsi.Variant.Price,
+                    FlashSalePrice = fsi.SalePrice,
+
+                    Stock = (int)fsi.Variant.Stock,
+
+                    ImageUrl = fsi.Variant.Product.ProductImages
+                        .Select(x => x.ImageUrl)
+                        .FirstOrDefault(),
+
+                    StartTime = fsi.FlashSale.StartTime,
+                    EndTime = fsi.FlashSale.EndTime
+                })
+                .ToListAsync();
+        }
+
+
         public async Task<Product?> GetProductById(string productId)
         {
             return await _context.Products.FirstOrDefaultAsync(x => x.ProductId == productId);
@@ -65,6 +175,7 @@ namespace Mirai.Infastructure.Repositories
 
         public async Task<PagedResult<GetAllProductsByFilterDto>> GetProductsByFilterAsync(ProductSearchFilter filter)
         {
+            var now = DateTime.Now;
             var query = _context.Products.AsQueryable()
                 .Where(p => p.IsActive == true)
                 .Select(p => new GetAllProductsByFilterDto
@@ -86,7 +197,15 @@ namespace Mirai.Infastructure.Repositories
                             Color = v.Color,
                             PhoneModel = v.PhoneModel,
                             Price = v.Price,
-                            Stock = v.Stock
+                            Stock = v.Stock,
+                            FlashSalePrice = _context.FlashSaleItems
+                            .Where(fsi => fsi.VariantId == v.VariantId && 
+                            fsi.IsActive == true && 
+                            fsi.FlashSale!.IsActive == true 
+                            && now >= fsi.FlashSale.StartTime && now <= fsi.FlashSale.EndTime).Select(fsi => (decimal?)fsi.SalePrice).FirstOrDefault(),
+                            IsFlashSale = _context.FlashSaleItems.Any(fsi => fsi.VariantId == v.VariantId && fsi.IsActive == true && fsi.FlashSale!.IsActive == true && now >= fsi.FlashSale.StartTime && now <= fsi.FlashSale.EndTime),
+                            FlashSaleStartTime = _context.FlashSaleItems.Where(fsi => fsi.VariantId == v.VariantId && fsi.IsActive == true && fsi.FlashSale!.IsActive == true).Select(fsi => (DateTime?)fsi.FlashSale.StartTime).FirstOrDefault(),
+                            FlashSaleEndTime = _context.FlashSaleItems.Where(fsi => fsi.VariantId == v.VariantId && fsi.IsActive == true && fsi.FlashSale!.IsActive == true).Select(fsi => (DateTime?)fsi.FlashSale.EndTime).FirstOrDefault()
                         })
                         .ToList(),
                     ProductImages = p.ProductImages
@@ -149,13 +268,9 @@ namespace Mirai.Infastructure.Repositories
 */
             var totalCount = await query.CountAsync();
 
-            /*var colors = await query
-                .SelectMany(u => u.Variants.Select(v => v.Color))
-                .Distinct()
-                .ToListAsync();*/
 
             var items = await query
-                .Skip((filter.PageNumber - 1) * filter.PageSize)    
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
                 .Take(filter.PageSize)
                 .ToListAsync();
 
@@ -163,9 +278,8 @@ namespace Mirai.Infastructure.Repositories
             {
                 Items = items,
                 TotalCount = totalCount,
-                PageNumber = filter.PageNumber,     
+                PageNumber = filter.PageNumber,
                 PageSize = filter.PageSize,
-                //Colors = colors
             };
 
         }
@@ -179,12 +293,26 @@ namespace Mirai.Infastructure.Repositories
             }
             product.Name = createProductDto.Name;
             product.Description = createProductDto.Description;
-            product.Price = createProductDto.Price;
             product.BrandId = createProductDto.BrandId;
             product.CategoryId = createProductDto.CategoryId;
             _context.Products.Update(product);
             await _context.SaveChangesAsync();
             return product;
+        }
+
+        public async Task<bool> UpdateProductStar(string productId, decimal RatingAvg, int RatingCount)
+        {
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == productId);
+            if (product == null)
+            {
+                return false;
+            }
+            product.RatingAvg = RatingAvg;
+            product.RatingCount = RatingCount;
+            product.UpdatedAt = DateTime.Now;
+            _context.Products.Update(product);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

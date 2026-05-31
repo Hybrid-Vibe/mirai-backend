@@ -10,8 +10,6 @@ namespace Mirai.Application.DTO
 
         public string? Description { get; set; }
 
-        public decimal? Price { get; set; }
-
         public string? CategoryId { get; set; }
 
         public string? BrandId { get; set; }

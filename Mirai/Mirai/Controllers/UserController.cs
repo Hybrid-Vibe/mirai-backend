@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Mirai.Application.DTO;
 using Mirai.Application.Interfaces.Services;
+using System.Security.Claims;
 
 namespace Mirai.Controllers
 {
@@ -10,9 +12,11 @@ namespace Mirai.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
-        public UserController(IUserService userService)
+        private readonly IJwtTokenGenerator _tokenBlacklistService;
+        public UserController(IUserService userService, IJwtTokenGenerator tokenBlacklistService)
         {
             _userService = userService;
+            _tokenBlacklistService = tokenBlacklistService;
         }
 
         [HttpPost("login")]
@@ -44,6 +48,100 @@ namespace Mirai.Controllers
             }
         }
 
+        [HttpPost("login-user-by-supabase")]
+        [Authorize]
+        public async Task<IActionResult> SyncUser()
+        {
+            var uid =
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst("sub")?.Value;
+
+            var email =
+                User.FindFirst(ClaimTypes.Email)?.Value
+                ?? User.FindFirst("email")?.Value;
+
+            var fullName = User.FindFirst("full_name")?.Value;
+            if (string.IsNullOrEmpty(fullName))
+            {
+                var userMetadataClaim = User.FindFirst("user_metadata");
+                if (userMetadataClaim != null && !string.IsNullOrEmpty(userMetadataClaim.Value))
+                {
+                    try
+                    {
+                        var metadata = System.Text.Json.JsonDocument.Parse(userMetadataClaim.Value);
+                        if (metadata.RootElement.TryGetProperty("full_name", out var fullNameElement))
+                        {
+                            fullName = fullNameElement.GetString();
+                        }
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                    }
+                }
+            }
+            var avatarUrl = User.FindFirst("avatar_url")?.Value;
+            if (string.IsNullOrEmpty(avatarUrl))
+            {
+                var userMetadataClaim = User.FindFirst("user_metadata");
+                if (userMetadataClaim != null && !string.IsNullOrEmpty(userMetadataClaim.Value))
+                {
+                    try
+                    {
+                        var metadata = System.Text.Json.JsonDocument.Parse(userMetadataClaim.Value);
+                        if (metadata.RootElement.TryGetProperty("avatar_url", out var avatarUrlElement))
+                        {
+                            avatarUrl = avatarUrlElement.GetString();
+                        }
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(uid))
+            {
+                return Unauthorized();
+            }
+
+            var dto = new SyncSupabaseUserDto
+            {
+                SupabaseUid = uid,
+                Email = email ?? "",
+                FullName = fullName ?? "",
+                AvatarUrl = avatarUrl ?? ""
+            };
+
+            await _userService.SyncSupabaseUserAsync(dto);
+
+            return Ok(new
+            {
+                message = "Sync success"
+            });
+        }
+
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            var authHeader = Request.Headers["Authorization"].ToString();
+
+            if (string.IsNullOrEmpty(authHeader))
+            {
+                return BadRequest();
+            }
+
+            var token = authHeader.Replace("Bearer ", "");
+
+            await _tokenBlacklistService.BlacklistTokenAsync(token);
+
+            return Ok(new
+            {
+                message = "Logout successful"
+            });
+        }
+
+        [Authorize(Roles = "1")]
         [HttpGet("Get-All-Users")]
         public async Task<IActionResult> GetAllUsersAsync()
         {
@@ -57,6 +155,47 @@ namespace Mirai.Controllers
             var users = await _userService.GetUserByIdAsync(userId);
             return Ok(users);
 
+        }
+
+        //[Authorize]
+        [HttpPut("Change-Password{userId}")]
+        public Task<IActionResult> ChangePasswordAsync(string userId, [FromBody] ChangePasswordRequestDto request)
+        {
+
+            return _userService.ChangePasswordAsync(userId, request)
+                .ContinueWith<IActionResult>(task =>
+                {
+                    if (task.Result)
+                    {
+                        return Ok(new { message = "Password changed successfully." });
+                    }
+                    else
+                    {
+                        return BadRequest(new { message = "Current password is incorrect." });
+                    }
+                });
+        }
+
+        [HttpPut("Update-Profile/{userId}")]
+        public async Task<IActionResult> UpdateProfileUserAsync(string userId, [FromBody] UpdateProfileUserDto dto)
+        {
+            var updatedUser = await _userService.UpdateProfileUserAsync(userId, dto);
+            if (!updatedUser)
+            {
+                return NotFound(new { message = "User not found." });
+            }
+            return Ok(new { message = "User profile updated successfully." });
+        }
+
+        [HttpPut("Update-Profile-By-Admin/{userId}")]
+        public async Task<IActionResult> UpdateProfileUserForAdminAsync(string userId, [FromBody] UpdateProfileUserByAdminDto dto)
+        {
+            var updatedUser = await _userService.UpdateProfileUserForAdminAsync(userId, dto);
+            if (!updatedUser)
+            {
+                return NotFound(new { message = "User not found." });
+            }
+            return Ok(new { message = "User profile updated successfully." });
         }
     }
 }

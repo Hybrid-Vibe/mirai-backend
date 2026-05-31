@@ -40,6 +40,13 @@ namespace Mirai.Controllers
             return Ok(product);
         }
 
+        [HttpPost("Create-Product-ProductImages-ProductVariants")]
+        public async Task<IActionResult> CreateAllProducts([FromBody] CreateProductRequestDto request)
+        {
+            await _productService.CreateAllProducts(request);
+            return Ok("product");
+        }
+
         [HttpPut("Update-Product/{productId}")]
         public async Task<IActionResult> UpdateProduct(string productId, [FromBody] CreateProductDto createProductDto)
         {
@@ -56,6 +63,13 @@ namespace Mirai.Controllers
         {
             var products = await _productService.GetProductsByFilterAsync(filter);
             return Ok(products);
+        }
+
+        [HttpGet("Flash-Sale-Products")]
+        public async Task<IActionResult> GetFlashSaleProductsAsync()
+        {
+            var flashSaleProducts = await _productService.GetFlashSaleProductsAsync();
+            return Ok(flashSaleProducts);
         }
     }
 }

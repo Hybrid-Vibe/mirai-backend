@@ -11,7 +11,7 @@ public partial class Shipping
 
     public string AddressId { get; set; } = null!;
 
-    public string? ShippingStatus { get; set; }
+    public int? ShippingStatus { get; set; }
 
     public string? Carrier { get; set; }
 

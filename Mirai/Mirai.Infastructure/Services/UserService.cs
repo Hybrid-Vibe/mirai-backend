@@ -20,6 +20,17 @@ namespace Mirai.Infastructure.Services
             this.jwtTokenGenerator = jwtTokenGenerator;
         }
 
+        public async Task<bool> ChangePasswordAsync(string userId, ChangePasswordRequestDto request)
+        {
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
+            bool isValid = BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user?.PasswordHash); 
+            if (!isValid) {
+                return false;
+            }
+             await _unitOfWork.UserRepository.ChangePasswordAsync(userId, request);
+            return true;
+        }
+
         public async Task<List<GetUserDto>> GetAllUsersAsync()
         {
             return await _unitOfWork.UserRepository.GetAllUsersAsync();
@@ -29,6 +40,8 @@ namespace Mirai.Infastructure.Services
         {
             return _unitOfWork.UserRepository.GetUserByIdAsync(userId);
         }
+
+        
 
         public async Task<AuthResponseDto?> LoginAsync(LoginRequestDto request)
         {
@@ -64,6 +77,21 @@ namespace Mirai.Infastructure.Services
             return true;
         }
 
-        
+        public async Task SyncSupabaseUserAsync(SyncSupabaseUserDto dto)
+        {
+            await _unitOfWork.UserRepository.SyncSupabaseUserAsync(dto);
+        }
+
+        public async Task<bool> UpdateProfileUserAsync(string userId, UpdateProfileUserDto dto)
+        {
+            await _unitOfWork.UserRepository.UpdateProfileUserAsync(userId, dto);
+            return true;
+        }
+
+        public async Task<bool> UpdateProfileUserForAdminAsync(string userId, UpdateProfileUserByAdminDto dto)
+        {
+            await _unitOfWork.UserRepository.UpdateProfileUserForAdminAsync(userId, dto);
+            return true;
+        }
     }
 }

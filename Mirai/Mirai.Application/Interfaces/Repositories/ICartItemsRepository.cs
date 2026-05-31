@@ -14,6 +14,9 @@ namespace Mirai.Application.Interfaces.Repositories
         Task<Cart> GetCartByUserIdAsync(string userId);
         Task<List<CartItem>> GetCartItemByCartIdAsync(string cartId);
         Task RemoveCartItems(List<CartItem> cartItems);
+        Task<bool> DeleteCartItem(string cartItemId);
+        Task<bool> DeleteCart(string cartId);
+        Task<CartItem?> GetByCartItemIdAsync(string id);
         Task<PagedResult<CartDto>> GetCartById(CartSearchFilter filter);
     }
 }

@@ -13,6 +13,8 @@ namespace Mirai.Infastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
+
+
             services.AddPersistence(configuration);
             services.AddApplicationServices();
             services.AddExternalClients(configuration);
@@ -54,6 +56,9 @@ namespace Mirai.Infastructure
             services.AddScoped<IAIImageService, AIImageService>();
             services.AddScoped<IAdminService, AdminService>();
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+            services.AddScoped<ITurnstileService, TurnstileService>();
+            services.AddScoped<IReviewService, ReviewService>();
+            services.AddScoped<IFlashSaleService, FlashSaleService>();
 
             return services;
         }

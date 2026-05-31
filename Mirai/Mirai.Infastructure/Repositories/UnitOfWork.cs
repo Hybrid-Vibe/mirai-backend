@@ -31,8 +31,9 @@ public class UnitOfWork : IUnitOfWork
     public ICartItemsRepository CartItemsRepository { get; }
 
     public IAIImageRepository AIImageRepository { get; }
-
     public IAdminRepository AdminRepository { get; }
+    public IReviewRepository ReviewRepository { get; }
+    public IFlashSaleRepository FlashSaleRepository { get; }
 
     public UnitOfWork(AppDbContext context)
     {
@@ -49,6 +50,8 @@ public class UnitOfWork : IUnitOfWork
         CartItemsRepository = new CartItemsRepository(_context);
         AIImageRepository = new AIImageRepository(_context);
         AdminRepository = new AdminRepository(_context);
+        ReviewRepository = new ReviewRepository(_context);
+        FlashSaleRepository = new FlashSaleRepository(_context);
     }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
