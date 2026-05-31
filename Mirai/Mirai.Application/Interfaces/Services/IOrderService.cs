@@ -13,5 +13,6 @@ namespace Mirai.Application.Interfaces.Services
         Task UpdateOrderStatus(string orderId, OrderStatus newStatus);
         Task UpdatePaymentStatus(string orderId, PaymentStatus newStatus);
         Task<Order> GetByIdAsync(string id);
+        Task<Order> GetByUserIdAsync(string userId);
     }
 }

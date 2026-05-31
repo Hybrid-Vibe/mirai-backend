@@ -149,7 +149,7 @@ namespace Mirai.Controllers
             return Ok(users);
 
         }
-        [HttpGet("Get-User-By-UserId{userId}")]
+        [HttpGet("Get-User-By-UserId/{userId}")]
         public async Task<IActionResult> GetAllUsersAsync(string userId)
         {
             var users = await _userService.GetUserByIdAsync(userId);
@@ -158,7 +158,7 @@ namespace Mirai.Controllers
         }
 
         //[Authorize]
-        [HttpPut("Change-Password{userId}")]
+        [HttpPut("Change-Password/{userId}")]
         public Task<IActionResult> ChangePasswordAsync(string userId, [FromBody] ChangePasswordRequestDto request)
         {
 

@@ -22,13 +22,13 @@ namespace Mirai.Controllers
             return Ok(addresses);
         }
 
-        [HttpGet("Get-Address-By-AddressId{addressId}")]
+        [HttpGet("Get-Address-By-AddressId/{addressId}")]
         public async Task<IActionResult> GetAddressAsync(string addressId)
         {
             var addresses = await _addressService.GetAddressByIdAsync(addressId);
             return Ok(addresses);
         }
-        [HttpGet("Get-Address-By-UserId{userId}")]
+        [HttpGet("Get-Address-By-UserId/{userId}")]
         public async Task<IActionResult> GetAddressByUserIdAsync(string userId)
         {
             var addresses = await _addressService.GetAddressByUserIdAsync(userId);
@@ -46,7 +46,7 @@ namespace Mirai.Controllers
             return Ok(address);
         }
 
-        [HttpPut("Update-Address{addressId}")]
+        [HttpPut("Update-Address/{addressId}")]
         public async Task<IActionResult> UpdateAddressAsync([FromBody] UpdateAddressDto updateAddressDto, string addressId)
         {
             var address = await _addressService.UpdateAddressAsync(updateAddressDto, addressId);

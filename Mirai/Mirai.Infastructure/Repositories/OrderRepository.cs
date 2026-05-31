@@ -219,5 +219,14 @@ namespace Mirai.Infastructure.Repositories
         {
             return await base.GetByIdAsync(id);
         }
+
+        public async Task<Order> GetByUserIdAsync(string userId)
+        {
+            return await _context.Orders
+                .Include(o => o.OrderItems)
+                .Include(o => o.Payments)
+                .Include(o => o.Shippings)
+                .FirstOrDefaultAsync(o => o.UserId == userId);
+        }
     }
 }

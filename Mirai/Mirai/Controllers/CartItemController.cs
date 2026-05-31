@@ -29,7 +29,7 @@ namespace Mirai.Controllers
             return Ok(result);
         }
 
-        [HttpPost("Checkout-from-cart-{userId}")]
+        [HttpPost("Checkout-from-cart/{userId}")]
         public async Task<IActionResult> CheckoutFromCart(string userId)
         {
             var user = await _userService.GetUserByIdAsync(userId);
@@ -62,7 +62,7 @@ namespace Mirai.Controllers
             return Ok(result);
         }
 
-        [HttpDelete("Delete-cart-item-{cartItemId}")]
+        [HttpDelete("Delete-cart-item/{cartItemId}")]
         public async Task<IActionResult> DeleteCartItem(string cartItemId)
         {
             var wasDeleted = await _cartItemsService.DeleteCartItem(cartItemId);
@@ -75,7 +75,7 @@ namespace Mirai.Controllers
             return Content($"Cart item with ID: {cartItemId} has been deleted");
         }
 
-        [HttpGet("Get-cart-item-by-id-{cartItemId}")]
+        [HttpGet("Get-cart-item-by-id/{cartItemId}")]
         public async Task<IActionResult> GetCartItemById(string cartItemId)
         {
             var cartItem = await _cartItemsService.GetByCartItemIdAsync(cartItemId);

@@ -31,6 +31,15 @@ namespace Mirai.Controllers
             return Ok(order);
         }
 
+        [HttpGet("Orders-History-By-User/{userId}")]
+        public async Task<IActionResult> GetOrdersByUserId(string userId)
+        {
+            var orders = await _orderService.GetByUserIdAsync(userId);
+            if (orders == null)
+                return NotFound($"Orders for user with ID {userId} not found");
+            return Ok(orders);
+        }
+
         [HttpPut("Update-Order-Status/{id}")]
         public async Task<IActionResult> UpdateOrderStatus(string id, [FromBody] OrderStatus newStatus)
         {
@@ -54,5 +63,7 @@ namespace Mirai.Controllers
             await _orderService.UpdatePaymentStatus(id, newStatus);
             return Ok("Update payment status successfully");
         }
+
+
     }
 }
