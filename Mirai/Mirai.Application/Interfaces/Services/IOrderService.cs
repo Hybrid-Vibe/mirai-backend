@@ -10,9 +10,9 @@ namespace Mirai.Application.Interfaces.Services
     public interface IOrderService
     {
         Task<OrderResponseDto> CreateOrder(OrderRequestDto orderRequestDto);
-        Task UpdateOrderStatus(string orderId, OrderStatus newStatus);
-        Task UpdatePaymentStatus(string orderId, PaymentStatus newStatus);
+        Task<UpdateOrderStatusResponse> UpdateOrderStatus(string orderId, OrderStatus newStatus);
+        Task<UpdateOrderStatusResponse> UpdatePaymentStatus(string orderId, PaymentStatus newStatus);
         Task<Order> GetByIdAsync(string id);
-        Task<Order> GetByUserIdAsync(string userId);
+        Task<List<Order>> GetByUserIdAsync(string userId);
     }
 }

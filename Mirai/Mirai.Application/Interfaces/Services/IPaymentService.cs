@@ -12,7 +12,7 @@ namespace Mirai.Application.Interfaces.Services
     {
         Task<string> CreatePaymentUrl(PaymentInformationModel model, HttpContext context);
         Task<PaymentResponseModel> PaymentExecute(IQueryCollection collections);
-        Task UpdatePaymentStatus(string orderId, PaymentStatusInPayment newStatus);
+        Task<UpdatePaymentStatusResponse> UpdatePaymentStatus(string orderId, PaymentStatusInPayment newStatus);
         Task<Payment> CreatePaymentByCOD(PaymentByCODDto paymentByCODDto);
         Task<Payment> GetByIdAsync(string id);
     }

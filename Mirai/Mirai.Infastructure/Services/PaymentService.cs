@@ -166,9 +166,9 @@ namespace Mirai.Infastructure.Services
             }
         }
 
-        public async Task UpdatePaymentStatus(string orderId, PaymentStatusInPayment newStatus)
+        public async Task<UpdatePaymentStatusResponse> UpdatePaymentStatus(string orderId, PaymentStatusInPayment newStatus)
         {
-            await _unitOfWork.PaymentRepository.UpdatePaymentStatus(orderId, newStatus);
+            return await _unitOfWork.PaymentRepository.UpdatePaymentStatus(orderId, newStatus);
         }
     }
 }

@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Mirai.Application.DTO;
 using Mirai.Application.Interfaces.Services;
+using Mirai.Domain.Entities;
 using Mirai.Domain.Enum;
 
 namespace Mirai.Controllers
@@ -35,33 +37,48 @@ namespace Mirai.Controllers
         public async Task<IActionResult> GetOrdersByUserId(string userId)
         {
             var orders = await _orderService.GetByUserIdAsync(userId);
-            if (orders == null)
-                return NotFound($"Orders for user with ID {userId} not found");
-            return Ok(orders);
+            return Ok(orders ?? new List<Order>());
         }
 
+        [Authorize(Roles = "1")]
         [HttpPut("Update-Order-Status/{id}")]
         public async Task<IActionResult> UpdateOrderStatus(string id, [FromBody] OrderStatus newStatus)
         {
-            var order = await _orderService.GetByIdAsync(id);
-            if (order == null)
+            try
             {
-                return NotFound($"Order with ID {id} not found");
+                var order = await _orderService.GetByIdAsync(id);
+                if (order == null)
+                {
+                    return NotFound($"Order with ID {id} not found");
+                }
+                var result = await _orderService.UpdateOrderStatus(id, newStatus);
+                return Ok(result);
             }
-            await _orderService.UpdateOrderStatus(id, newStatus);
-            return Ok("Update order status successfully");
+            catch (Exception)
+            {
+                return BadRequest("Status update failed");
+            }
+            
         }
 
+        [Authorize(Roles = "1")]
         [HttpPut("Update-Payment-Status/{id}")]
         public async Task<IActionResult> UpdatePaymentStatus(string id, [FromBody] PaymentStatus newStatus)
         {
-            var order = await _orderService.GetByIdAsync(id);
-            if (order == null)
+            try
             {
-                return NotFound($"Order with ID {id} not found");
+                var order = await _orderService.GetByIdAsync(id);
+                if (order == null)
+                {
+                    return NotFound($"Order with ID {id} not found");
+                }
+                var result = await _orderService.UpdatePaymentStatus(id, newStatus);
+                return Ok(result);
             }
-            await _orderService.UpdatePaymentStatus(id, newStatus);
-            return Ok("Update payment status successfully");
+            catch (Exception)
+            {
+                return BadRequest("Status update failed");
+            }
         }
 
 

@@ -12,9 +12,11 @@ namespace Mirai.Controllers
     public class PaymentController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
-        public PaymentController(IPaymentService paymentService)
+        private readonly IOrderService _orderService;
+        public PaymentController(IPaymentService paymentService, IOrderService orderService)
         {
             _paymentService = paymentService;
+            _orderService = orderService;
         }
 
         [HttpPost("Create-Payment-Url")]
@@ -39,17 +41,24 @@ namespace Mirai.Controllers
             return Ok(payment);
         }
 
-        [HttpPut("Update-Payment-Status/{id}")]
+        /*[HttpPut("Update-Payment-Status/{id}")]
         public async Task<IActionResult> UpdatePaymentStatus(string id, [FromBody] PaymentStatusInPayment newStatus)
         {
-            var order = await _paymentService.GetByIdAsync(id);
-            if (order == null)
+            try
             {
-                return NotFound($"Order with ID {id} not found");
+                var order = await _orderService.GetByIdAsync(id);
+                if (order == null)
+                {
+                    return NotFound($"Order with ID {id} not found");
+                }
+                var result = await _paymentService.UpdatePaymentStatus(id, newStatus);
+                return Ok(result);
             }
-            await _paymentService.UpdatePaymentStatus(id, newStatus);
-            return Ok("Update payment status successfully");
-        }
+            catch (Exception)
+            {
+                return BadRequest("Status update failed");
+            }
+        }*/
 
         [HttpPost("Create-Payment-By-COD")]
         public async Task<IActionResult> CreatePaymentByCOD([FromBody] PaymentByCODDto paymentByCODDto)
