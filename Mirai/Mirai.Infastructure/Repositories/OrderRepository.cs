@@ -119,7 +119,7 @@ namespace Mirai.Infastructure.Repositories
             return orderResponse;
         }
 
-        public async Task UpdateOrderStatus(string orderId, OrderStatus newStatus)
+        public async Task<UpdateOrderStatusResponse> UpdateOrderStatus(string orderId, OrderStatus newStatus)
         {
             var order = await _context.Orders
                 .FirstOrDefaultAsync(o => o.OrderId == orderId)
@@ -141,9 +141,16 @@ namespace Mirai.Infastructure.Repositories
             order.Status = (int)newStatus;
 
             await _context.SaveChangesAsync();
+            return new UpdateOrderStatusResponse
+            {
+                OrderId = order.OrderId,
+                Status = (OrderStatus)order.Status,
+                PaymentStatus = (PaymentStatus)order.PaymentStatus,
+                UpdatedAt = DateTime.Now
+            };
         }
 
-        public async Task UpdatePaymentStatus(string orderId, PaymentStatus newStatus)
+        public async Task<UpdateOrderStatusResponse> UpdatePaymentStatus(string orderId, PaymentStatus newStatus)
         {
             var order = await _context.Orders
                 .FirstOrDefaultAsync(o => o.OrderId == orderId)
@@ -160,6 +167,13 @@ namespace Mirai.Infastructure.Repositories
             order.PaymentStatus = (int)newStatus;
 
             await _context.SaveChangesAsync();
+            return new UpdateOrderStatusResponse
+            {
+                OrderId = order.OrderId,
+                Status = (OrderStatus)order.Status,
+                PaymentStatus = (PaymentStatus)order.PaymentStatus,
+                UpdatedAt = DateTime.Now
+            };
         }
 
         public async Task CancelAndRefund(string orderId)
@@ -220,13 +234,12 @@ namespace Mirai.Infastructure.Repositories
             return await base.GetByIdAsync(id);
         }
 
-        public async Task<Order> GetByUserIdAsync(string userId)
+        public async Task<List<Order>> GetByUserIdAsync(string userId)
         {
             return await _context.Orders
                 .Include(o => o.OrderItems)
-                .Include(o => o.Payments)
-                .Include(o => o.Shippings)
-                .FirstOrDefaultAsync(o => o.UserId == userId);
+                .Where(o => o.UserId == userId)
+                .ToListAsync();
         }
     }
 }

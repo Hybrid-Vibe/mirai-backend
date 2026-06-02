@@ -27,19 +27,19 @@ namespace Mirai.Infastructure.Services
             return await _unitOfWork.OrderRepository.GetByIdAsync(id);
         }
 
-        public async Task<Order> GetByUserIdAsync(string userId)
+        public async Task<List<Order>> GetByUserIdAsync(string userId)
         {
             return await _unitOfWork.OrderRepository.GetByUserIdAsync(userId);
         }
 
-        public async Task UpdateOrderStatus(string orderId, OrderStatus newStatus)
+        public async Task<UpdateOrderStatusResponse> UpdateOrderStatus(string orderId, OrderStatus newStatus)
         {
-            await _unitOfWork.OrderRepository.UpdateOrderStatus(orderId, newStatus);
+            return await _unitOfWork.OrderRepository.UpdateOrderStatus(orderId, newStatus);
         }
 
-        public async Task UpdatePaymentStatus(string orderId, PaymentStatus newStatus)
+        public async Task<UpdateOrderStatusResponse> UpdatePaymentStatus(string orderId, PaymentStatus newStatus)
         {
-            await _unitOfWork.OrderRepository.UpdatePaymentStatus(orderId, newStatus);
+            return await _unitOfWork.OrderRepository.UpdatePaymentStatus(orderId, newStatus);
         }
     }
 }

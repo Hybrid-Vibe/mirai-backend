@@ -75,7 +75,7 @@ namespace Mirai.Infastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task UpdatePaymentStatus(string orderId, PaymentStatusInPayment newStatus)
+        public async Task<UpdatePaymentStatusResponse> UpdatePaymentStatus(string orderId, PaymentStatusInPayment newStatus)
         {
             var payment = await _context.Payments
                 .FirstOrDefaultAsync(p => p.OrderId == orderId)
@@ -85,14 +85,20 @@ namespace Mirai.Infastructure.Repositories
             {
                 throw new Exception($"Invalid payment status in DB: {payment.Status}");
             }
-            var currentStatus = (PaymentStatusInPayment)payment.Status; 
-            if(!PaymentStateValidator.CanUpdatePaymentStatus(currentStatus, newStatus))
+            var currentStatus = (PaymentStatusInPayment)payment.Status;
+            if (!PaymentStateValidator.CanUpdatePaymentStatus(currentStatus, newStatus))
                 throw new Exception($"Invalid payment status transition: {payment.Status} -> {newStatus}");
-            
+
             payment.Status = (int)newStatus;
             payment.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
+            return new UpdatePaymentStatusResponse
+            { 
+                PaymentId = payment.PaymentId,
+                Status = (PaymentStatusInPayment)payment.Status,
+                Amount = payment.Amount
+            };
         }
 
         public async Task<Payment> GetByIdAsync(string id)
