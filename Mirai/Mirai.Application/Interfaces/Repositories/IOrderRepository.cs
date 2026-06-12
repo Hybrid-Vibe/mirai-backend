@@ -15,6 +15,7 @@ namespace Mirai.Application.Interfaces.Repositories
         Task MarkPaymentFailed(string orderId);
         Task MarkAsPaid(string orderId);
         Task<Order> GetByIdAsync(string id);
+        Task<Order> GetByPayOSOrderCode(long payosOrderCode);
         Task<List<Order>> GetByUserIdAsync(string userId);
     }
 }

@@ -59,6 +59,8 @@ namespace Mirai.Infastructure
             services.AddScoped<ITurnstileService, TurnstileService>();
             services.AddScoped<IReviewService, ReviewService>();
             services.AddScoped<IFlashSaleService, FlashSaleService>();
+            services.AddScoped<IStorageService, StorageService>();
+            services.AddSingleton<SupabaseClientService>();
 
             return services;
         }

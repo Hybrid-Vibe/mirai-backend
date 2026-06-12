@@ -4,6 +4,7 @@ using Mirai.Application.DTO;
 using Mirai.Application.Interfaces.Services;
 using Mirai.Domain.Enum;
 using Mirai.Infastructure.Services;
+using System.Text.Json;
 
 namespace Mirai.Controllers
 {
@@ -25,11 +26,40 @@ namespace Mirai.Controllers
             var url = await _paymentService.CreatePaymentUrl(model, HttpContext);
             return Ok(new { PaymentUrl = url });
         }
+
+        [HttpPost("PayOS-Url")]
+        public async Task<IActionResult> CreatePayOSUrl(string orderId)
+        {
+            var url = await _paymentService.CreatePayOSUrl(orderId);
+            return Ok(new { PaymentUrl = url });
+        }
         [HttpGet("Callback")]
         public async Task<IActionResult> PaymentCallbackVnpay()
         {
             var response = await _paymentService.PaymentExecute(Request.Query);
             return new JsonResult(response);
+        }
+
+        [HttpPost("payment-webhook")]
+        public async Task<IActionResult> PaymentWebhook([FromBody] PayOSWebhookRootDto dto)
+        {
+            try
+            {
+                Console.WriteLine("WEBHOOK HIT");
+                Console.WriteLine(JsonSerializer.Serialize(dto));
+                Console.WriteLine(
+                    JsonSerializer.Serialize(dto,
+                        new JsonSerializerOptions
+                        {
+                            WriteIndented = true
+                        }));
+                await _paymentService.HandlePayOSWebhook(dto);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet("Get-Payment-By-Id/{id}")]

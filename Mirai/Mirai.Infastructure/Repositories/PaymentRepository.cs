@@ -106,6 +106,28 @@ namespace Mirai.Infastructure.Repositories
             return await base.GetByIdAsync(id);
         }
 
+        public async Task<Payment> CreatePaymentByPayOS(PaymentDto paymentDto)
+        {
+            var payment = new Payment()
+            {
+                PaymentId = Guid.NewGuid().ToString(),
+                OrderId = paymentDto.OrderId,
+                Method = (int)PaymentMethod.PayOS,
+                Provider = (int)PaymentMethod.PayOS,
+                Status = (int)PaymentStatusInPayment.Pending,
+                Amount = paymentDto.Amount,
+                TransactionId = paymentDto.TransactionId,
+                CreatedAt = DateTime.Now,
 
+            };
+            await _context.Payments.AddAsync(payment);
+            await _context.SaveChangesAsync();
+            return payment;
+        }
+
+        public async Task<Payment> GetByTransactionIdAsync(string transactionId)
+        {
+            return await _context.Payments.FirstOrDefaultAsync(x => x.TransactionId == transactionId);
+        }
     }
 }

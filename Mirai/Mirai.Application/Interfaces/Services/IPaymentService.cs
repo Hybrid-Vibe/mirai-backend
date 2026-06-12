@@ -15,5 +15,7 @@ namespace Mirai.Application.Interfaces.Services
         Task<UpdatePaymentStatusResponse> UpdatePaymentStatus(string orderId, PaymentStatusInPayment newStatus);
         Task<Payment> CreatePaymentByCOD(PaymentByCODDto paymentByCODDto);
         Task<Payment> GetByIdAsync(string id);
+        Task<string> CreatePayOSUrl(string orderId);
+        Task HandlePayOSWebhook(PayOSWebhookRootDto dto);
     }
 }
