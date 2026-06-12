@@ -67,6 +67,7 @@ public partial class AppDbContext : DbContext
     {
         optionsBuilder.UseNpgsql(GetConnectionString());
     }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -436,6 +437,7 @@ public partial class AppDbContext : DbContext
                 .HasMaxLength(32)
                 .HasColumnName("order_number");
             entity.Property(e => e.PaymentStatus).HasColumnName("payment_status");
+            entity.Property(e => e.PayosOrderCode).HasColumnName("payos_order_code");
             entity.Property(e => e.PlacedAt)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("placed_at");

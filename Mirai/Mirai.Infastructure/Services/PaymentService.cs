@@ -8,18 +8,22 @@ using Mirai.Domain.Enum;
 using SportsBicycleStore.Libraries;
 using System;
 using System.Collections.Generic;
+using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 
 namespace Mirai.Infastructure.Services
 {
     public class PaymentService : IPaymentService
     {
         private readonly IConfiguration _configuration;
+        private readonly HttpClient _httpClient;
         private readonly IUnitOfWork _unitOfWork;
-        public PaymentService(IConfiguration configuration, IUnitOfWork unitOfWork)
+        public PaymentService(IConfiguration configuration, IUnitOfWork unitOfWork, HttpClient httpClient)
         {
             _configuration = configuration;
             _unitOfWork = unitOfWork;
+            _httpClient = httpClient;
         }
 
         public async Task<Payment> CreatePaymentByCOD(PaymentByCODDto paymentByCODDto)
@@ -60,11 +64,122 @@ namespace Mirai.Infastructure.Services
             return paymentUrl;
         }
 
+        public async Task<string> CreatePayOSUrl(string orderId)
+        {
+            var order = await _unitOfWork.OrderRepository.GetByIdAsync(orderId);
+            if (order == null) throw new Exception("Order not found");
+
+
+            if (string.IsNullOrEmpty(_configuration["PayOS:ReturnUrl"]))
+                throw new Exception("ReturnUrl missing");
+
+            if (string.IsNullOrEmpty(_configuration["PayOS:CancelUrl"]))
+                throw new Exception("CancelUrl missing");
+
+            // Extract the variables to format the signature string correctly
+            var amount = Convert.ToInt32(order.TotalAmount);
+            var description = order.OrderNumber.Substring(0, Math.Min(25, order.OrderNumber.Length));
+            var returnUrl = _configuration["PayOS:ReturnUrl"];
+            var cancelUrl = _configuration["PayOS:CancelUrl"];
+            var orderCode = order.PayosOrderCode;
+
+            // Generate the signature
+            var signatureData = $"amount={amount}&cancelUrl={cancelUrl}&description={description}&orderCode={orderCode}&returnUrl={returnUrl}";
+            var checksumKey = _configuration["PayOS:ChecksumKey"];
+
+            using var hmac = new System.Security.Cryptography.HMACSHA256(System.Text.Encoding.UTF8.GetBytes(checksumKey));
+            var hashBytes = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(signatureData));
+            var signature = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+
+            var requestBody = new
+            {
+                orderCode = orderCode,
+                amount = amount,
+                description = description,
+                returnUrl = returnUrl,
+                cancelUrl = cancelUrl,
+                signature = signature // Add the required signature field
+            };
+
+            var clientId = _configuration["PayOS:ClientId"];
+            var apiKey = _configuration["PayOS:ApiKey"];
+
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Add("x-client-id", clientId);
+            _httpClient.DefaultRequestHeaders.Add("x-api-key", apiKey);
+
+            var response = await _httpClient.PostAsJsonAsync(
+                "https://api-merchant.payos.vn/v2/payment-requests",
+                requestBody
+            );
+
+            var result = await response.Content.ReadAsStringAsync();
+
+            Console.WriteLine(result);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"PayOS error: {result}");
+            }
+
+            using var json = JsonDocument.Parse(result);
+            var root = json.RootElement;
+
+            if (!root.TryGetProperty("data", out var data) ||
+                data.ValueKind == JsonValueKind.Null)
+            {
+                throw new Exception($"Invalid PayOS response: {result}");
+            }
+
+            if (!data.TryGetProperty("checkoutUrl", out var checkoutUrlElement))
+            {
+                throw new Exception($"Missing checkoutUrl: {result}");
+            }
+
+            return checkoutUrlElement.GetString();
+
+        }
+
+
+        public async Task HandlePayOSWebhook(PayOSWebhookRootDto dto)
+        {
+            Console.WriteLine("WEBHOOK HIT");
+
+            var order = await _unitOfWork.OrderRepository
+                .GetByPayOSOrderCode(dto.Data.OrderCode);
+
+            if (order == null) return;
+
+            if (dto.Code != "00" || dto.Success != true)
+            {
+                await _unitOfWork.OrderRepository.UpdatePaymentStatus(order.OrderId, PaymentStatus.Failed);
+                return;
+            }
+
+            // 🔥 CHECK DUPLICATE BEFORE INSERT
+            var existing = await _unitOfWork.PaymentRepository
+                .GetByTransactionIdAsync(dto.Data.OrderCode.ToString());
+
+            if (existing == null)
+            {
+                await _unitOfWork.PaymentRepository.CreatePaymentByPayOS(new PaymentDto
+                {
+                    OrderId = order.OrderId,
+                    Amount = dto.Data.Amount,
+                    TransactionId = dto.Data.OrderCode.ToString()
+                });
+            }
+
+            await _unitOfWork.OrderRepository.UpdatePaymentStatus(order.OrderId, PaymentStatus.Paid);
+            await _unitOfWork.OrderRepository.UpdateOrderStatus(order.OrderId, OrderStatus.Confirmed);
+
+            await _unitOfWork.PaymentRepository.UpdatePaymentStatus(order.OrderId, PaymentStatusInPayment.Succeed);
+        }
+
         public async Task<Payment> GetByIdAsync(string id)
         {
             return await _unitOfWork.PaymentRepository.GetByIdAsync(id);
         }
-
         public async Task<PaymentResponseModel> PaymentExecute(IQueryCollection collections)
         {
             try

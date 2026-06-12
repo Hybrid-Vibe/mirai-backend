@@ -37,6 +37,8 @@ public partial class Order
 
     public DateTime? CancelledAt { get; set; }
 
+    public long? PayosOrderCode { get; set; }
+
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();

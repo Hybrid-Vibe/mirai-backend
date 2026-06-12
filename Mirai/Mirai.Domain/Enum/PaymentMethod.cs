@@ -7,6 +7,7 @@ namespace Mirai.Domain.Enum
     public enum PaymentMethod
     {
         VNPay = 1,
-        COD = 2
+        COD = 2,
+        PayOS = 3
     }
 }

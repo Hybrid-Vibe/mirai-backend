@@ -34,7 +34,8 @@ namespace Mirai.Infastructure.Repositories
                     {
                         OrderId = orderId,
                         UserId = orderRequestDto.UserId,
-                        OrderNumber = $"ORD-{DateTime.Now.Ticks}",
+                        OrderNumber = $"ORD{DateTime.Now:yyMMddHHmmss}{Guid.NewGuid():N}".Substring(0, 32),
+                        PayosOrderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                         Currency = "VNĐ",
                         Status = (int)OrderStatus.Created,
                         PaymentStatus = (int)PaymentStatus.Unpaid,
@@ -93,6 +94,7 @@ namespace Mirai.Infastructure.Repositories
                     {
                         OrderId = order.OrderId,
                         OrderNumber = order.OrderNumber,
+                        PayosOrderCode = (long)order.PayosOrderCode,
                         TotalAmount = order.TotalAmount,
                         Status = (int)(OrderStatus)order.Status,
                         PaymentStatus = (int)(PaymentStatus)order.PaymentStatus,
@@ -240,6 +242,12 @@ namespace Mirai.Infastructure.Repositories
                 .Include(o => o.OrderItems)
                 .Where(o => o.UserId == userId)
                 .ToListAsync();
+        }
+
+        public async Task<Order> GetByPayOSOrderCode(long payosOrderCode)
+        {
+            return await _context.Orders
+                .FirstOrDefaultAsync(o => o.PayosOrderCode == payosOrderCode);
         }
     }
 }

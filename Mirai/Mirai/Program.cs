@@ -5,10 +5,15 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Mirai.Infastructure;
 using Mirai.MiddleWare;
+using Mirai.Supabase;
 using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<SupabaseSettings>(
+    builder.Configuration.GetSection("Supabase")
+);
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -64,7 +69,7 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
-var jwtKey = builder.Configuration["Jwt:Key"];
+var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new Exception("JWT Key is missing");
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
@@ -138,24 +143,24 @@ builder.Services
 
 builder.Services.AddAuthorization();
 builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
+
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Mirai API v1");
         c.RoutePrefix = "swagger";
     });
-}
+
 
 app.UseCors("AllowAll");
 app.UseStaticFiles();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<JwtBlacklistMiddleware>();
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
