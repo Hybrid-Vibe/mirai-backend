@@ -56,11 +56,11 @@ namespace Mirai.Infastructure.Repositories
                     foreach (var item in orderRequestDto.Products)
                     {
                         if (!variants.TryGetValue(item.VariantId, out var variant))
-                            throw new Exception($"Variant {item.VariantId} not found");
+                            throw new Mirai.Application.Exceptions.UserFriendlyException(400, "VARIANT_NOT_FOUND", $"Variant {item.VariantId} not found");
 
 
                         if (item.Quantity <= 0)
-                            throw new Exception("Quantity must be > 0");
+                            throw new Mirai.Application.Exceptions.UserFriendlyException(400, "INVALID_QUANTITY", "Quantity must be > 0");
 
                         var lineTotal = variant.Price * item.Quantity;
 

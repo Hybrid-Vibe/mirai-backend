@@ -7,7 +7,8 @@ namespace Mirai.Application.Interfaces.Services
 {
     public interface IJwtTokenGenerator
     {
-        string GenerateToken(User user);
+        string GenerateAccessToken(User user);
+        string GenerateRefreshToken();
         Task BlacklistTokenAsync(string token);
 
         Task<bool> IsBlacklistedAsync(string token);

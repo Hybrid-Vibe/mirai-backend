@@ -49,14 +49,24 @@ namespace Mirai.MiddleWare
                     };
                     break;
 
-                default:
-                        context.Response.StatusCode = 500;
-                        // Log the full exception for debugging
-                        Console.WriteLine($"Unhandled exception: {exception}");
-                        break;
-                }
+                case Mirai.Application.Exceptions.UserFriendlyException appEx:
+                    context.Response.StatusCode = appEx.StatusCode;
+                    response = new
+                    {
+                        Success = false,
+                        ErrorCode = appEx.ErrorCode,
+                        Message = appEx.Message
+                    };
+                    break;
 
-                var jsonResponse = JsonSerializer.Serialize(response, new JsonSerializerOptions
+                default:
+                    context.Response.StatusCode = 500;
+                    Console.WriteLine($"Unhandled exception: {exception}");
+                    break;
+
+            }
+
+            var jsonResponse = JsonSerializer.Serialize(response, new JsonSerializerOptions
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 });

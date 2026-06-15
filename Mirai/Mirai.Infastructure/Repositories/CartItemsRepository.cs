@@ -35,6 +35,10 @@ namespace Mirai.Infastructure.Repositories
 
             var existItem = await _context.CartItems.FirstOrDefaultAsync(ci => ci.CartId == cart.CartId && ci.VariantId == createCartDto.VariantId);
             var variant = await _context.ProductVariants.FirstOrDefaultAsync(pv => pv.VariantId == createCartDto.VariantId);
+            if (variant == null)
+            {
+                throw new Mirai.Application.Exceptions.UserFriendlyException(400, "VARIANT_NOT_FOUND", $"Product variant '{createCartDto.VariantId}' does not exist.");
+            }
             if (existItem != null) {
                 existItem.Quantity += createCartDto.Quantity;
                 existItem.UpdatedAt = DateTime.Now;
@@ -132,6 +136,7 @@ namespace Mirai.Infastructure.Repositories
                             {
                                 CartItemId = x.cpi.ci.CartItemId,
                                 VariantId = x.cpi.ci.VariantId,
+                                ProductId = x.cpi.p.ProductId,
                                 ProductName = x.cpi.p.Name,
                                 Image = img != null ? img.ImageUrl : null,
                                 Price = x.cpi.ci.UnitPrice ?? x.cpi.v.Price ?? 0,
@@ -176,6 +181,7 @@ namespace Mirai.Infastructure.Repositories
                             {
                                 CartItemId = x.cpi.ci.CartItemId,
                                 VariantId = x.cpi.ci.VariantId,
+                                ProductId = x.cpi.p.ProductId,
                                 ProductName = x.cpi.p.Name,
                                 Image = img != null ? img.ImageUrl : null,
                                 Price = x.cpi.ci.UnitPrice ?? x.cpi.v.Price ?? 0,

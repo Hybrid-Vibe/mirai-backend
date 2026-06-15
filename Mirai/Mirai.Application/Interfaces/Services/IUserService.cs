@@ -16,6 +16,8 @@ namespace Mirai.Application.Interfaces.Services
         Task<bool> ChangePasswordAsync(string userId, ChangePasswordRequestDto request);
         Task<bool> UpdateProfileUserAsync(string userId, UpdateProfileUserDto dto);
         Task<bool> UpdateProfileUserForAdminAsync(string userId, UpdateProfileUserByAdminDto dto);
+        Task<AuthResponseDto>RefreshTokenAsync(string refreshToken);
+        Task LogoutAsync(string userId);
 
     }
 }

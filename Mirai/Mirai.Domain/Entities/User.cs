@@ -25,6 +25,10 @@ public partial class User
 
     public string? AvatarUrl { get; set; }
 
+    public string? RefreshToken { get; set; }
+
+    public DateTime? RefreshTokenExpiryTime { get; set; }
+
     public virtual ICollection<Account> Accounts { get; set; } = new List<Account>();
 
     public virtual ICollection<Address> Addresses { get; set; } = new List<Address>();

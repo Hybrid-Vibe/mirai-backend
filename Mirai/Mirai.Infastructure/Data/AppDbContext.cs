@@ -67,7 +67,6 @@ public partial class AppDbContext : DbContext
     {
         optionsBuilder.UseNpgsql(GetConnectionString());
     }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -842,6 +841,10 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Phone)
                 .HasMaxLength(20)
                 .HasColumnName("phone");
+            entity.Property(e => e.RefreshToken).HasColumnName("refresh_token");
+            entity.Property(e => e.RefreshTokenExpiryTime)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("refresh_token_expiry_time");
             entity.Property(e => e.RoleId)
                 .HasMaxLength(40)
                 .HasColumnName("role_id");
