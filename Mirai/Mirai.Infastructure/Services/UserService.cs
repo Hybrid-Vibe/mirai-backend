@@ -55,10 +55,73 @@ namespace Mirai.Infastructure.Services
             {
                 return null;
             }
-            var token = jwtTokenGenerator.GenerateToken(user);
+
+
+            var accessToken = jwtTokenGenerator.GenerateAccessToken(user);
+
+            var refreshToken = jwtTokenGenerator.GenerateRefreshToken();
+
+            user.RefreshToken = refreshToken;
+
+            user.RefreshTokenExpiryTime =
+                DateTime.Now.AddDays(7);
+
+            await _unitOfWork.UserRepository.UpdateRefreshTokenForUser(user);
+
+            
             return new AuthResponseDto
             {
-                Token = token,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,    
+                UserId = user.UserId,
+                Email = user.Email,
+                FullName = user.FullName,
+                Role = user.RoleId
+            };
+        }
+
+        public async Task LogoutAsync(string userId)
+        {
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
+
+            if (user == null)
+                return;
+
+            user.RefreshToken = null;
+            user.RefreshTokenExpiryTime = null;
+
+            await _unitOfWork.UserRepository.UpdateRefreshTokenForUser(user);
+        }
+
+        public async Task<AuthResponseDto> RefreshTokenAsync(string refreshToken)
+        {
+            var user = await _unitOfWork.UserRepository.GetByRefreshTokenAsync(refreshToken);
+
+            if (user == null)
+                throw new UnauthorizedAccessException();
+
+            if (user.RefreshTokenExpiryTime <DateTime.Now)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var newAccessToken =
+                jwtTokenGenerator.GenerateAccessToken(user);
+
+            var newRefreshToken =
+                jwtTokenGenerator.GenerateRefreshToken();
+
+            user.RefreshToken = newRefreshToken;
+
+            user.RefreshTokenExpiryTime =
+                DateTime.Now.AddDays(7);
+
+            await _unitOfWork.UserRepository.UpdateRefreshTokenForUser(user);
+
+            return new AuthResponseDto
+            {
+                AccessToken = newAccessToken,
+                RefreshToken = newRefreshToken,
                 UserId = user.UserId,
                 Email = user.Email,
                 FullName = user.FullName,

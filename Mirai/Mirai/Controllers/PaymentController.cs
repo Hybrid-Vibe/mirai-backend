@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Mirai.Application.DTO;
 using Mirai.Application.Interfaces.Services;
@@ -20,6 +21,7 @@ namespace Mirai.Controllers
             _orderService = orderService;
         }
 
+        [Authorize]
         [HttpPost("Create-Payment-Url")]
         public async Task<IActionResult> CreatePaymentUrlVnpay(PaymentInformationModel model)
         {
@@ -27,6 +29,7 @@ namespace Mirai.Controllers
             return Ok(new { PaymentUrl = url });
         }
 
+        [Authorize]
         [HttpPost("PayOS-Url")]
         public async Task<IActionResult> CreatePayOSUrl(string orderId)
         {
@@ -40,6 +43,7 @@ namespace Mirai.Controllers
             return new JsonResult(response);
         }
 
+        [Authorize]
         [HttpPost("payment-webhook")]
         public async Task<IActionResult> PaymentWebhook([FromBody] PayOSWebhookRootDto dto)
         {
@@ -62,6 +66,7 @@ namespace Mirai.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("Get-Payment-By-Id/{id}")]
         public async Task<IActionResult> GetPaymentById(string id)
         {
@@ -90,6 +95,7 @@ namespace Mirai.Controllers
             }
         }*/
 
+        [Authorize]
         [HttpPost("Create-Payment-By-COD")]
         public async Task<IActionResult> CreatePaymentByCOD([FromBody] PaymentByCODDto paymentByCODDto)
         {

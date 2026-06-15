@@ -18,6 +18,8 @@ namespace Mirai.Application.Interfaces.Repositories
         Task<User?> GetByIdAsync(string id);
         Task<User?> UpdateProfileUserAsync(string userId, UpdateProfileUserDto dto);
         Task<User?> UpdateProfileUserForAdminAsync(string userId, UpdateProfileUserByAdminDto dto);
+        Task<User?> UpdateRefreshTokenForUser(User user);
+        Task<User?> GetByRefreshTokenAsync(string refreshToken);
 
     }
 }

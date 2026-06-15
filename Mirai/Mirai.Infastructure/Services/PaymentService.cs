@@ -9,6 +9,7 @@ using SportsBicycleStore.Libraries;
 using System;
 using System.Collections.Generic;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -145,18 +146,37 @@ namespace Mirai.Infastructure.Services
         {
             Console.WriteLine("WEBHOOK HIT");
 
+            Console.WriteLine(
+                JsonSerializer.Serialize(dto,
+                new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                }));
+
+            // ⚠️ 1. VERIFY SIGNATURE TRƯỚC TIÊN (QUAN TRỌNG)
+            var isValidSignature = VerifyPayOSWebhookSignature(dto, _configuration["PayOS:ChecksumKey"]);
+
+            if (!isValidSignature)
+            {
+                Console.WriteLine("INVALID PAYOS SIGNATURE - REJECT WEBHOOK");
+                return; // chặn toàn bộ request giả mạo
+            }
+
+            // ⚠️ 2. CHECK ORDER
             var order = await _unitOfWork.OrderRepository
                 .GetByPayOSOrderCode(dto.Data.OrderCode);
 
-            if (order == null) return;
+            if (order == null)
+                return;
 
+            // ⚠️ 3. CHECK PAYOS RESPONSE STATUS
             if (dto.Code != "00" || dto.Success != true)
             {
                 await _unitOfWork.OrderRepository.UpdatePaymentStatus(order.OrderId, PaymentStatus.Failed);
                 return;
             }
 
-            // 🔥 CHECK DUPLICATE BEFORE INSERT
+            // ⚠️ 4. CHECK DUPLICATE PAYMENT
             var existing = await _unitOfWork.PaymentRepository
                 .GetByTransactionIdAsync(dto.Data.OrderCode.ToString());
 
@@ -170,10 +190,83 @@ namespace Mirai.Infastructure.Services
                 });
             }
 
+            // ⚠️ 5. UPDATE ORDER STATUS
             await _unitOfWork.OrderRepository.UpdatePaymentStatus(order.OrderId, PaymentStatus.Paid);
             await _unitOfWork.OrderRepository.UpdateOrderStatus(order.OrderId, OrderStatus.Confirmed);
 
-            await _unitOfWork.PaymentRepository.UpdatePaymentStatus(order.OrderId, PaymentStatusInPayment.Succeed);
+            // ⚠️ 6. UPDATE PAYMENT STATUS
+            await _unitOfWork.PaymentRepository.UpdatePaymentStatus(
+                order.OrderId,
+                PaymentStatusInPayment.Succeed
+            );
+        }
+
+        private bool VerifyPayOSWebhookSignature(
+    PayOSWebhookRootDto dto,
+    string checksumKey)
+        {
+            if (dto?.Data == null ||
+                string.IsNullOrWhiteSpace(dto.Signature))
+            {
+                return false;
+            }
+
+            var data = new Dictionary<string, object>
+            {
+                ["orderCode"] = dto.Data.OrderCode,
+                ["amount"] = dto.Data.Amount,
+                ["description"] = dto.Data.Description,
+                ["accountNumber"] = dto.Data.AccountNumber,
+                ["reference"] = dto.Data.Reference,
+                ["transactionDateTime"] = dto.Data.TransactionDateTime,
+                ["currency"] = dto.Data.Currency,
+                ["paymentLinkId"] = dto.Data.PaymentLinkId,
+                ["code"] = dto.Data.Code,
+                ["desc"] = dto.Data.Desc,
+                ["counterAccountBankId"] = dto.Data.CounterAccountBankId,
+                ["counterAccountBankName"] = dto.Data.CounterAccountBankName,
+                ["counterAccountName"] = dto.Data.CounterAccountName,
+                ["counterAccountNumber"] = dto.Data.CounterAccountNumber,
+                ["virtualAccountName"] = dto.Data.VirtualAccountName,
+                ["virtualAccountNumber"] = dto.Data.VirtualAccountNumber
+            };
+
+            var sorted = data
+       .Where(x => x.Value != null)
+       .OrderBy(x => x.Key);
+            var rawData = string.Join("&",
+        sorted.Select(x => $"{x.Key}={x.Value}"));
+
+            Console.WriteLine($"RAW DATA: {rawData}");
+
+            var generatedSignature =
+                GenerateSignature(data, checksumKey);
+            Console.WriteLine($"PAYOS SIGNATURE: {dto.Signature}");
+            Console.WriteLine($"LOCAL SIGNATURE: {generatedSignature}");
+            return string.Equals(
+                generatedSignature,
+                dto.Signature,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private string GenerateSignature(
+    Dictionary<string, object> data,
+    string checksumKey)
+        {
+            var sorted = data
+                .Where(x => x.Value != null)
+                .OrderBy(x => x.Key, StringComparer.Ordinal);
+
+            var rawData = string.Join("&",
+                sorted.Select(x => $"{x.Key}={x.Value}"));
+
+            using var hmac = new HMACSHA256(
+                Encoding.UTF8.GetBytes(checksumKey));
+
+            var hash = hmac.ComputeHash(
+                Encoding.UTF8.GetBytes(rawData));
+
+            return Convert.ToHexString(hash).ToLower();
         }
 
         public async Task<Payment> GetByIdAsync(string id)

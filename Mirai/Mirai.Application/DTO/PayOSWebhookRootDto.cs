@@ -9,7 +9,9 @@ namespace Mirai.Application.DTO
         public string Code { get; set; }
         public string Desc { get; set; }
         public bool Success { get; set; }
-        public PayOSWebhookDto Data { get; set; }
+
         public string Signature { get; set; }
+
+        public PayOSWebhookDto Data { get; set; }
     }
 }

@@ -173,5 +173,22 @@ namespace Mirai.Infastructure.Repositories
             await _context.SaveChangesAsync();
             return user;
         }
+
+        public async Task<User?> UpdateRefreshTokenForUser(User user)
+        {
+            
+            user.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+            return user;
+        }
+
+        public async Task<User?> GetByRefreshTokenAsync(string refreshToken)
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(x =>
+                    x.RefreshToken == refreshToken);
+        }
     }
+    
 }

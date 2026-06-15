@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Mirai.Application.DTO;
 using Mirai.Application.Interfaces.Services;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace Mirai.Controllers
@@ -120,7 +121,7 @@ namespace Mirai.Controllers
             });
         }
 
-        [Authorize]
+        /*[Authorize]
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
@@ -139,6 +140,55 @@ namespace Mirai.Controllers
             {
                 message = "Logout successful"
             });
+        }*/
+
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+                return BadRequest("Invalid user");
+
+            await _userService.LogoutAsync(userId);
+
+            return Ok(new
+            {
+                message = "Logout successful"
+            });
+        }
+
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUserProfile()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            var user = await _userService.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
+
+            return Ok(user);
+        }
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken(RefreshTokenRequest request)
+        {
+            var result =
+                await _userService.RefreshTokenAsync(
+                    request.RefreshToken);
+
+            return Ok(result);
         }
 
         [Authorize(Roles = "1")]

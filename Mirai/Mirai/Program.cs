@@ -140,7 +140,6 @@ builder.Services
         };
     });
 
-
 builder.Services.AddAuthorization();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
