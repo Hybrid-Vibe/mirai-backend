@@ -41,8 +41,7 @@ public class ReplicateImageService : IReplicateImageService
             input = new
             {
                 prompt = BuildPrompt(
-            request.Prompt,
-            PhoneCaseTemplates.Map["iphone-14-pro-max"]
+            request.Prompt
         ),
 
                 aspect_ratio = "3:4",
@@ -115,87 +114,18 @@ public class ReplicateImageService : IReplicateImageService
     // =========================
     // PROMPT BUILDER
     // =========================
-    public static string BuildPrompt(
-    string userPrompt,
-    PhoneCaseTemplate model)
+
+
+    public static string BuildPrompt(string userPrompt)
     {
-
         return $@"
-
-Create a realistic flat back view phone case design.
-
-
-The final image should look like a real physical phone case sample,
-not a phone and not a technical drawing.
-
-
-PRODUCT:
-{model.Model} protective case.
-
-
-CASE SHAPE:
-- exact iPhone case silhouette
-- vertical rounded rectangle
-- curved corners
-- slim transparent protective edge
-- back side view only
-
-
-CAMERA DESIGN:
-Top-left camera area:
-
-{model.CameraHint}
-
-
-Camera details:
-- realistic camera protection ring
-- raised border around camera cutout
-- empty camera opening
-- correct iPhone 14 Pro Max camera position
-- no extra camera holes
-
-
-ARTWORK:
-{userPrompt}
-
-
-DESIGN:
-- premium phone case artwork
-- full back surface coverage
-- clean composition
-- suitable for UV printing
-
-
-BACKGROUND:
-- isolated phone case
-- white background
-- soft studio presentation
-- if dark mode, use dark neutral background
-
-
-STRICT RULES:
-- only one phone case
-- back side only
-- no smartphone inside
-- no screen
-- no front phone
-- no hand
-- no person
-- no text
-- no logo
-- no watermark
-- no measurement labels
-- no dimensions
-- no technical drawing
-
-
-OUTPUT:
-flat centered phone case,
-real product shape,
-high resolution
-
-";
-
+{userPrompt},
+masterpiece, best quality, ultra detailed,
+cinematic lighting, volumetric light,
+sharp focus, realistic textures,
+professional photography,
+8k resolution, depth of field,
+natural colors, highly detailed";
     }
 
     // =========================
