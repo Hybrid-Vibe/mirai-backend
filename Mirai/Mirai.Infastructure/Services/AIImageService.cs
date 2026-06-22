@@ -14,19 +14,31 @@ namespace Mirai.Infastructure.Services;
 public class AIImageService : IAIImageService
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly INanoBananaService _nanoBananaService;
+    private readonly IReplicateImageService _replicateImageService;
+    private readonly IStorageService _storageService;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<AIImageService> _logger;
 
-    public AIImageService(IUnitOfWork unitOfWork, INanoBananaService nanoBananaService, ILogger<AIImageService> logger)
+    public AIImageService(
+        IUnitOfWork unitOfWork,
+        IReplicateImageService replicateImageService,
+        IStorageService storageService,
+        IHttpClientFactory httpClientFactory,
+        ILogger<AIImageService> logger)
     {
         _unitOfWork = unitOfWork;
-        _nanoBananaService = nanoBananaService;
+        _replicateImageService = replicateImageService;
+        _storageService = storageService;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
-    public async Task<AIImageDto> CreateAIImageAsync(string userId, CreateAIImageDto createDto, CancellationToken cancellationToken = default)
+    public async Task<AIImageDto> CreateAIImageAsync(
+        string userId,
+        CreateAIImageDto createDto,
+        CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Creating AI image for user {UserId}", userId);
+        _logger.LogInformation("Create AI image for user {UserId}", userId);
 
         var aiImage = new AiImage
         {
@@ -38,54 +50,78 @@ public class AIImageService : IAIImageService
             Width = createDto.Width ?? 512,
             Height = createDto.Height ?? 512,
             Status = (int)AIImageStatus.Pending,
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.Now,
+            UpdatedAt = DateTime.Now
         };
-
-        var nanoBananaRequest = new NanoBananaRequestDto
-        {
-            Prompt = createDto.Prompt,
-            NegativePrompt = createDto.NegativePrompt,
-            Style = createDto.Style,
-            Width = createDto.Width ?? 512,
-            Height = createDto.Height ?? 512
-        };
-
-        try
-        {
-            _logger.LogInformation("Calling NanoBanana API for user {UserId}", userId);
-            var nanoBananaResponse = await _nanoBananaService.GenerateImageAsync(nanoBananaRequest, cancellationToken);
-            
-            if (nanoBananaResponse.Success)
-            {
-                aiImage.NanoBananaRequestId = nanoBananaResponse.RequestId;
-                aiImage.Status = (int)AIImageStatus.Processing;
-                
-                if (!string.IsNullOrEmpty(nanoBananaResponse.ImageUrl))
-                {
-                    aiImage.ImageUrl = nanoBananaResponse.ImageUrl;
-                    aiImage.ThumbnailUrl = nanoBananaResponse.ThumbnailUrl;
-                    aiImage.Status = (int)AIImageStatus.Completed;
-                    _logger.LogInformation("AI image generated successfully for user {UserId}, ImageId: {ImageId}", userId, aiImage.AiImageId);
-                }
-            }
-            else
-            {
-                aiImage.Status = (int)AIImageStatus.Failed;
-                aiImage.ErrorMessage = nanoBananaResponse.ErrorMessage;
-                _logger.LogWarning("NanoBanana API failed for user {UserId}: {Error}", userId, nanoBananaResponse.ErrorMessage);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating AI image for user {UserId}", userId);
-            aiImage.Status = (int)AIImageStatus.Failed;
-            aiImage.ErrorMessage = ex.Message;
-        }
 
         await _unitOfWork.AIImageRepository.AddAsync(aiImage, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        try
+        {
+            aiImage.Status = (int)AIImageStatus.Processing;
+
+            var result = await _replicateImageService.GenerateAsync(
+                createDto,
+                cancellationToken
+            );
+
+            var httpClient = _httpClientFactory.CreateClient("ExternalMedia");
+
+            var imageBytes = await httpClient.GetByteArrayAsync(
+                result.TemporaryImageUrl,
+                cancellationToken
+            );
+
+            var permanentUrl = await _storageService.UploadImageByAI(
+                imageBytes,
+                userId,
+                "png",
+                cancellationToken
+            );
+
+            aiImage.ImageUrl = permanentUrl;
+            aiImage.ThumbnailUrl = permanentUrl;
+
+            // tạm dùng field cũ để lưu prediction id
+            aiImage.NanoBananaRequestId = result.PredictionId;
+
+            aiImage.Status = (int)AIImageStatus.Completed;
+            aiImage.UpdatedAt = DateTime.Now;
+
+            _logger.LogInformation("FLUX image success for user {UserId}", userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "FLUX generation failed");
+
+            aiImage.Status = (int)AIImageStatus.Failed;
+            aiImage.ErrorMessage = ex.Message;
+            aiImage.UpdatedAt = DateTime.Now;
+        }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
         return MapToDto(aiImage);
+    }
+
+    private static AIImageDto MapToDto(AiImage aiImage)
+    {
+        return new AIImageDto
+        {
+            AIImageId = aiImage.AiImageId,
+            UserId = aiImage.UserId,
+            Prompt = aiImage.Prompt,
+            NegativePrompt = aiImage.NegativePrompt,
+            ImageUrl = aiImage.ImageUrl,
+            ThumbnailUrl = aiImage.ThumbnailUrl,
+            Style = aiImage.Style,
+            Width = aiImage.Width,
+            Height = aiImage.Height,
+            Status = (AIImageStatus)aiImage.Status,
+            ErrorMessage = aiImage.ErrorMessage,
+            CreatedAt = aiImage.CreatedAt,
+            UpdatedAt = aiImage.UpdatedAt
+        };
     }
 
     public async Task<AIImageDto?> GetAIImageByIdAsync(string aiImageId, CancellationToken cancellationToken = default)
@@ -116,7 +152,7 @@ public class AIImageService : IAIImageService
         }
 
         aiImage.Status = (int)updateDto.Status;
-        aiImage.UpdatedAt = DateTime.UtcNow;
+        aiImage.UpdatedAt = DateTime.Now;
 
         if (updateDto.ImageUrl != null)
             aiImage.ImageUrl = updateDto.ImageUrl;
@@ -161,23 +197,5 @@ public class AIImageService : IAIImageService
         return result;
     }
 
-    private static AIImageDto MapToDto(AiImage aiImage)
-    {
-        return new AIImageDto
-        {
-            AIImageId = aiImage.AiImageId,
-            UserId = aiImage.UserId,
-            Prompt = aiImage.Prompt,
-            NegativePrompt = aiImage.NegativePrompt,
-            ImageUrl = aiImage.ImageUrl,
-            ThumbnailUrl = aiImage.ThumbnailUrl,
-            Style = aiImage.Style,
-            Width = aiImage.Width,
-            Height = aiImage.Height,
-            Status = (AIImageStatus)aiImage.Status,
-            ErrorMessage = aiImage.ErrorMessage,
-            CreatedAt = aiImage.CreatedAt,
-            UpdatedAt = aiImage.UpdatedAt
-        };
-    }
+    
 }

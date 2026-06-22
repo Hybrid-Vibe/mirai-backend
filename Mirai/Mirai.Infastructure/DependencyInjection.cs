@@ -1,11 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Mirai.Application.DTO.Admin;
 using Mirai.Application.Interfaces.Repositories;
 using Mirai.Application.Interfaces.Services;
 using Mirai.Infastructure.Data;
 using Mirai.Infastructure.Repositories;
 using Mirai.Infastructure.Services;
+using System.Net.Http.Headers;
 
 namespace Mirai.Infastructure
 {
@@ -15,9 +18,8 @@ namespace Mirai.Infastructure
         {
 
 
-            services.AddPersistence(configuration);
-            services.AddApplicationServices();
-            services.AddExternalClients(configuration);
+            services.AddPersistence(configuration); 
+            services.AddApplicationServices(configuration);
 
             return services;
         }
@@ -41,7 +43,7 @@ namespace Mirai.Infastructure
             return services;
         }
 
-        private static IServiceCollection AddApplicationServices(this IServiceCollection services)
+        private static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAddressService, AddressService>();
@@ -61,19 +63,36 @@ namespace Mirai.Infastructure
             services.AddScoped<IFlashSaleService, FlashSaleService>();
             services.AddScoped<IStorageService, StorageService>();
             services.AddSingleton<SupabaseClientService>();
+            services.AddHttpClient("ExternalMedia");
+            services.Configure<ReplicateOptions>(
+                configuration.GetSection("Replicate")
+            );
+            services.AddHttpClient<IReplicateImageService, ReplicateImageService>(
+                (sp, client) =>
+                {
+                    var options =
+                        sp.GetRequiredService<IOptions<ReplicateOptions>>()
+                        .Value;
+
+
+                    client.BaseAddress =
+                        new Uri(options.BaseUrl);
+
+
+                    client.Timeout =
+                        TimeSpan.FromMinutes(3);
+
+
+                    client.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue(
+                            "Bearer",
+                            options.ApiToken
+                        );
+                });
 
             return services;
         }
 
-        private static IServiceCollection AddExternalClients(this IServiceCollection services, IConfiguration configuration)
-        {
-            services.AddHttpClient<INanoBananaService, NanoBananaService>(client =>
-            {
-                var baseUrl = configuration["NanoBanana:BaseUrl"] ?? "https://api.nanobanana.ai";
-                client.BaseAddress = new Uri(baseUrl);
-            });
-
-            return services;
-        }
+        
     }
 }
