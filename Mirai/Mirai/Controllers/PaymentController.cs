@@ -43,7 +43,6 @@ namespace Mirai.Controllers
             return new JsonResult(response);
         }
 
-        [Authorize]
         [HttpPost("payment-webhook")]
         public async Task<IActionResult> PaymentWebhook([FromBody] PayOSWebhookRootDto dto)
         {

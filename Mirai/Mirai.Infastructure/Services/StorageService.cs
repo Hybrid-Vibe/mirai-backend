@@ -31,6 +31,20 @@ namespace Mirai.Infastructure.Services
             return bucket.GetPublicUrl(fileName);
         }
 
-        
+        public async Task<string> UploadImageByAI(byte[] fileBytes, string userId, string extension, CancellationToken cancellationToken = default)
+        {
+            var bucket = _client.Storage.From("images");
+
+            var safeExt = extension.Trim('.');
+
+            if (safeExt != "png" && safeExt != "jpg" && safeExt != "jpeg" && safeExt != "webp")
+                safeExt = "png";
+
+            var fileName = $"ai-generated/{userId}/{Guid.NewGuid():N}.{safeExt}";
+
+            await bucket.Upload(fileBytes, fileName);
+
+            return bucket.GetPublicUrl(fileName);
+        }
     }
 }
