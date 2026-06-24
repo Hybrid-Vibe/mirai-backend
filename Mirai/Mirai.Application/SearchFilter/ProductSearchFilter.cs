@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -16,6 +16,8 @@ namespace Mirai.Application.SearchFilter
         public string? CategoryName { get; set; }
         public string? BrandId { get; set; }
         public string? BrandName { get; set; }
+        public Guid? CollectionId { get; set; }
+        public string? CollectionSlug { get; set; }
         /*public string? VariantId { get; set; }
         public string? Color { get; set; }
         public string? PhoneModel { get; set; }

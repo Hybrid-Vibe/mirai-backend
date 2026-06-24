@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Mirai.Domain.Entities;
 using System;
@@ -54,6 +54,10 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<Shipping> Shippings { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+
+    public virtual DbSet<Collection> Collections { get; set; }
+
+    public virtual DbSet<ProductCollection> ProductCollections { get; set; }
 
     private string GetConnectionString()
     {
@@ -857,6 +861,89 @@ public partial class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_role");
         });
+
+        // Cấu hình bảng Collection
+        modelBuilder.Entity<Collection>(entity =>
+        {
+            entity.ToTable("collections");
+            entity.HasKey(c => c.CollectionId).HasName("collections_pkey");
+            
+            entity.Property(c => c.CollectionId).HasColumnName("collection_id");
+            entity.Property(c => c.Name).IsRequired().HasMaxLength(150).HasColumnName("name");
+            entity.Property(c => c.Slug).IsRequired().HasMaxLength(150).HasColumnName("slug");
+            entity.HasIndex(c => c.Slug).IsUnique();
+            
+            entity.Property(c => c.Description).HasColumnName("description");
+            entity.Property(c => c.CoverImageUrl).HasMaxLength(500).HasColumnName("cover_image_url");
+            entity.Property(c => c.Tag).HasMaxLength(50).HasColumnName("tag");
+            entity.Property(c => c.IsActive).HasDefaultValue(true).HasColumnName("is_active");
+            entity.Property(c => c.DisplayOrder).HasDefaultValue(0).HasColumnName("display_order");
+            entity.Property(c => c.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP").HasColumnType("timestamp without time zone").HasColumnName("created_at");
+            entity.Property(c => c.UpdatedAt).HasColumnType("timestamp without time zone").HasColumnName("updated_at");
+        });
+
+        // Cấu hình bảng liên kết trung gian ProductCollection
+        modelBuilder.Entity<ProductCollection>(entity =>
+        {
+            entity.ToTable("product_collections");
+            entity.HasKey(pc => new { pc.ProductId, pc.CollectionId }).HasName("product_collections_pkey");
+            
+            entity.Property(pc => pc.ProductId).HasMaxLength(40).HasColumnName("product_id");
+            entity.Property(pc => pc.CollectionId).HasColumnName("collection_id");
+
+            entity.HasOne(pc => pc.Product)
+                  .WithMany(p => p.ProductCollections)
+                  .HasForeignKey(pc => pc.ProductId)
+                  .OnDelete(DeleteBehavior.Cascade)
+                  .HasConstraintName("fk_product_collections_product");
+
+            entity.HasOne(pc => pc.Collection)
+                  .WithMany(c => c.ProductCollections)
+                  .HasForeignKey(pc => pc.CollectionId)
+                  .OnDelete(DeleteBehavior.Cascade)
+                  .HasConstraintName("fk_product_collections_collection");
+        });
+
+        // Seed Data
+        var jardinId = Guid.Parse("b18b5773-197e-40af-a82f-2d6f8564c76b");
+        var greenRedId = Guid.Parse("f924df39-c12e-48a0-8bc2-1087cf28236d");
+        var denimId = Guid.Parse("1b089c89-22a0-4fc7-8db1-9cb6619bfde4");
+
+        modelBuilder.Entity<Collection>().HasData(
+            new Collection
+            {
+                CollectionId = jardinId,
+                Name = "JARDIN DE FLEURS",
+                Slug = "jardin-de-fleurs",
+                Description = "Dòng sản phẩm lấy cảm hứng từ thiên nhiên hoa cỏ nhiệt đới rực rỡ và nghệ thuật. Mang đến vẻ ngoài tinh tế, thời trang cho chiếc điện thoại của bạn.",
+                CoverImageUrl = "https://stuwtmcljxqhdlsawtif.supabase.co/storage/v1/object/public/images/uploads/peony.jpg",
+                Tag = "Mới nhất",
+                DisplayOrder = 1,
+                CreatedAt = DateTime.Parse("2026-06-08T00:00:00Z")
+            },
+            new Collection
+            {
+                CollectionId = greenRedId,
+                Name = "GREENGREEN + REDRED",
+                Slug = "greengreen-redred",
+                Description = "Sự kết hợp màu sắc đầy ngẫu hứng và độc đáo giữa tông xanh lá mát mắt cùng tông đỏ cá tính và nhiệt huyết.",
+                CoverImageUrl = "https://mirai.runasp.net/images/collections/greengreen_redred_cover.png",
+                Tag = "Nổi bật",
+                DisplayOrder = 2,
+                CreatedAt = DateTime.Parse("2026-06-08T00:00:00Z")
+            },
+            new Collection
+            {
+                CollectionId = denimId,
+                Name = "ON DENIM",
+                Slug = "on-denim",
+                Description = "Bộ sưu tập mang chất liệu và họa tiết Denim cổ điển bụi bặm, đậm chất thời trang đường phố và cực kỳ phong cách.",
+                CoverImageUrl = "https://mirai.runasp.net/images/collections/on_denim_cover.png",
+                Tag = "Xu hướng",
+                DisplayOrder = 3,
+                CreatedAt = DateTime.Parse("2026-06-08T00:00:00Z")
+            }
+        );
 
         OnModelCreatingPartial(modelBuilder);
     }
