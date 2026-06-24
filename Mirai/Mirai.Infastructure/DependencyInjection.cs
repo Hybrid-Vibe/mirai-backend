@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -62,6 +62,7 @@ namespace Mirai.Infastructure
             services.AddScoped<IReviewService, ReviewService>();
             services.AddScoped<IFlashSaleService, FlashSaleService>();
             services.AddScoped<IStorageService, StorageService>();
+            services.AddScoped<Mirai.Application.Interfaces.ICollectionService, CollectionService>();
             services.AddSingleton<SupabaseClientService>();
             services.AddHttpClient("ExternalMedia");
             services.Configure<ReplicateOptions>(

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Mirai.Application.DTO;
 using Mirai.Application.Extension;
 using Mirai.Application.Interfaces.Repositories;
@@ -176,8 +176,19 @@ namespace Mirai.Infastructure.Repositories
         public async Task<PagedResult<GetAllProductsByFilterDto>> GetProductsByFilterAsync(ProductSearchFilter filter)
         {
             var now = DateTime.Now;
-            var query = _context.Products.AsQueryable()
-                .Where(p => p.IsActive == true)
+            var productQuery = _context.Products.AsQueryable()
+                .Where(p => p.IsActive == true);
+
+            if (filter.CollectionId.HasValue)
+            {
+                productQuery = productQuery.Where(p => p.ProductCollections.Any(pc => pc.CollectionId == filter.CollectionId.Value));
+            }
+            else if (!string.IsNullOrEmpty(filter.CollectionSlug))
+            {
+                productQuery = productQuery.Where(p => p.ProductCollections.Any(pc => pc.Collection.Slug.ToLower() == filter.CollectionSlug.ToLower()));
+            }
+
+            var query = productQuery
                 .Select(p => new GetAllProductsByFilterDto
                 {
                     ProductId = p.ProductId,
