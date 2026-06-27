@@ -20,15 +20,29 @@ public class ReplicateImageService : IReplicateImageService
     private readonly HttpClient _httpClient;
     private readonly ReplicateOptions _options;
     private readonly ILogger<ReplicateImageService> _logger;
+    private readonly IPromptOptimizerService _promptOptimizer;
+    private readonly ILanguageDetector _languageDetector;
 
     public ReplicateImageService(
         HttpClient httpClient,
         IOptions<ReplicateOptions> options,
-        ILogger<ReplicateImageService> logger)
+        ILogger<ReplicateImageService> logger, IPromptOptimizerService promptOptimizerService, ILanguageDetector languageDetector)
     {
         _httpClient = httpClient;
         _options = options.Value;
         _logger = logger;
+        _promptOptimizer = promptOptimizerService;
+        _languageDetector = languageDetector;
+    }
+
+    public static bool IsVietnamese(string text)
+    {
+        string vietnameseChars =
+            "ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ";
+
+        return text
+            .ToLower()
+            .Any(c => vietnameseChars.Contains(c));
     }
 
     public async Task<ReplicateImageResult> GenerateAsync(
@@ -36,21 +50,27 @@ public class ReplicateImageService : IReplicateImageService
         CancellationToken cancellationToken = default)
     {
 
+        string finalPrompt;
+
+
+        if (IsVietnamese(request.Prompt))
+        {
+            finalPrompt =
+                await _promptOptimizer.OptimizeAsync(
+                    request.Prompt,
+                    cancellationToken);
+        }
+        else
+        {
+            finalPrompt = request.Prompt;
+        }
+
         var body = new
         {
             input = new
             {
-                prompt = BuildPrompt(
-            request.Prompt
-        ),
-
-                aspect_ratio = "3:4",
-
-                num_outputs = 1,
-
-                output_format = "png",
-
-                go_fast = true
+                prompt = finalPrompt,
+                aspect_ratio = "3:4"
             }
         };
 
@@ -126,28 +146,6 @@ sharp focus, realistic textures,
 professional photography,
 8k resolution, depth of field,
 natural colors, highly detailed";
-    }
-
-    // =========================
-    // WIDTH/HEIGHT → ASPECT RATIO
-    // =========================
-    private static string GetAspectRatio(int? width, int? height)
-    {
-        if (!width.HasValue || !height.HasValue)
-            return "3:4";
-
-        var w = width.Value;
-        var h = height.Value;
-
-        return (w, h) switch
-        {
-            (512, 512) => "1:1",
-            (768, 1024) => "3:4",
-            (1024, 768) => "4:3",
-            (1080, 1920) => "9:16",
-            (1920, 1080) => "16:9",
-            _ => "3:4"
-        };
     }
 
     private static string ExtractOutput(JsonElement output)

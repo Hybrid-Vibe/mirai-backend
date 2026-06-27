@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Mirai.Application.DTO;
 using Mirai.Application.DTO.Admin;
 using Mirai.Application.Interfaces.Repositories;
 using Mirai.Application.Interfaces.Services;
@@ -62,6 +63,9 @@ namespace Mirai.Infastructure
             services.AddScoped<IReviewService, ReviewService>();
             services.AddScoped<IFlashSaleService, FlashSaleService>();
             services.AddScoped<IStorageService, StorageService>();
+            services.AddScoped<IPromptOptimizerService, PromptOptimizerService>();
+            services.Configure<GroqOptions>(configuration.GetSection("Groq"));
+            services.AddScoped<ILanguageDetector, LanguageDetector>();
             services.AddScoped<Mirai.Application.Interfaces.ICollectionService, CollectionService>();
             services.AddSingleton<SupabaseClientService>();
             services.AddHttpClient("ExternalMedia");

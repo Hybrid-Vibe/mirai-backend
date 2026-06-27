@@ -73,10 +73,18 @@ public class AIImageService : IAIImageService
                 cancellationToken
             );
 
+            var extension = Path.GetExtension(new Uri(result.TemporaryImageUrl).AbsolutePath)
+                    .TrimStart('.');
+
+            if (string.IsNullOrWhiteSpace(extension))
+            {
+                extension = "webp";
+            }
+
             var permanentUrl = await _storageService.UploadImageByAI(
                 imageBytes,
                 userId,
-                "png",
+                extension,
                 cancellationToken
             );
 
