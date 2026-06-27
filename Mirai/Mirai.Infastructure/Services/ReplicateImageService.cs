@@ -55,10 +55,24 @@ public class ReplicateImageService : IReplicateImageService
 
         if (IsVietnamese(request.Prompt))
         {
-            finalPrompt =
-                await _promptOptimizer.OptimizeAsync(
-                    request.Prompt,
-                    cancellationToken);
+            try
+            {
+                finalPrompt =
+                    await _promptOptimizer.OptimizeAsync(
+                        request.Prompt,
+                        cancellationToken);
+
+                _logger.LogInformation(
+                    "Prompt optimized by Groq");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Groq optimize failed, using original prompt");
+
+                finalPrompt = request.Prompt;
+            }
         }
         else
         {
