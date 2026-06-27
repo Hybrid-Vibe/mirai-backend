@@ -20,6 +20,10 @@ namespace Mirai.Infastructure.Services
             IOptions<GroqOptions> options)
         {
             _httpClient = httpClient;
+
+            _httpClient.Timeout =
+                TimeSpan.FromSeconds(15);
+
             _options = options.Value;
         }
 
@@ -85,41 +89,51 @@ namespace Mirai.Infastructure.Services
                     "application/json");
 
 
-            var response =
-                await _httpClient.SendAsync(
-                    httpRequest,
-                    cancellationToken);
-
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                var error =
+                var response =
+                    await _httpClient.SendAsync(
+                        httpRequest,
+                        cancellationToken);
+
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error =
+                        await response.Content.ReadAsStringAsync(
+                            cancellationToken);
+
+                    throw new Exception(
+                        $"Groq error {response.StatusCode}: {error}");
+                }
+
+
+                var json =
                     await response.Content.ReadAsStringAsync(
                         cancellationToken);
 
-                throw new Exception(
-                    $"OpenRouter error {response.StatusCode}: {error}");
+
+                using var doc =
+                    JsonDocument.Parse(json);
+
+
+                var result =
+                    doc.RootElement
+                    .GetProperty("choices")[0]
+                    .GetProperty("message")
+                    .GetProperty("content")
+                    .GetString();
+
+
+                return result?.Trim()
+                    ?? prompt;
+
             }
+            catch (Exception ex)
+            {
 
-            var json =
-                await response.Content.ReadAsStringAsync(
-                    cancellationToken);
-
-
-            using var doc =
-                JsonDocument.Parse(json);
-
-
-            var result =
-                doc.RootElement
-                .GetProperty("choices")[0]
-                .GetProperty("message")
-                .GetProperty("content")
-                .GetString();
-
-
-            return result?.Trim()
-                ?? prompt;
+                return prompt;
+            }
         }
     }
 }
