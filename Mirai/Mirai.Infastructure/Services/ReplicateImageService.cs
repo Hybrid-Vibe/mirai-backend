@@ -84,11 +84,11 @@ public class ReplicateImageService : IReplicateImageService
             input = new
             {
                 prompt = finalPrompt,
-                aspect_ratio = "3:4"
+                aspect_ratio = "9:16"
             }
         };
 
-        _logger.LogInformation("Calling FLUX Schnell...");
+        _logger.LogInformation("Calling Replicate model {Model}", _options.Model);
 
         var response = await _httpClient.PostAsJsonAsync(
             $"models/{_options.Model}/predictions",
@@ -136,7 +136,7 @@ public class ReplicateImageService : IReplicateImageService
         }
 
         if (prediction.status == "failed")
-            throw new Exception("FLUX generation failed");
+            throw new Exception($"Replicate generation failed for model {_options.Model}");
 
         return new ReplicateImageResult
         {
@@ -149,18 +149,6 @@ public class ReplicateImageService : IReplicateImageService
     // PROMPT BUILDER
     // =========================
 
-
-    public static string BuildPrompt(string userPrompt)
-    {
-        return $@"
-{userPrompt},
-masterpiece, best quality, ultra detailed,
-cinematic lighting, volumetric light,
-sharp focus, realistic textures,
-professional photography,
-8k resolution, depth of field,
-natural colors, highly detailed";
-    }
 
     private static string ExtractOutput(JsonElement output)
     {

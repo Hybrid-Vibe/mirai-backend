@@ -33,23 +33,74 @@ public class AIImageService : IAIImageService
         _logger = logger;
     }
 
-    public async Task<AIImageDto> CreateAIImageAsync(
-        string userId,
-        CreateAIImageDto createDto,
-        CancellationToken cancellationToken = default)
+    public async Task<GenerateAIImageResultDto> CreateAIImageAsync(
+    string userId,
+    CreateAIImageDto createDto,
+    CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Create AI image for user {UserId}", userId);
+        _logger.LogInformation("Generate AI image (no DB save) for user {UserId}", userId);
+
+        var result = await _replicateImageService.GenerateAsync(
+            createDto,
+            cancellationToken
+        );
+
+        var httpClient = _httpClientFactory.CreateClient("ExternalMedia");
+
+        var imageBytes = await httpClient.GetByteArrayAsync(
+            result.TemporaryImageUrl,
+            cancellationToken
+        );
+
+        var extension = Path.GetExtension(new Uri(result.TemporaryImageUrl).AbsolutePath)
+                .TrimStart('.');
+
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            extension = "webp";
+        }
+
+        var permanentUrl = await _storageService.UploadImageByAI(
+            imageBytes,
+            userId,
+            extension,
+            cancellationToken
+        );
+
+        _logger.LogInformation("Replicate image generation success for user {UserId}", userId);
+
+        return new GenerateAIImageResultDto
+        {
+            ImageUrl = permanentUrl,
+            PredictionId = result.PredictionId,
+            Prompt = createDto.Prompt,
+            NegativePrompt = createDto.NegativePrompt,
+            Style = createDto.Style,
+            Width = createDto.Width ?? 512,
+            Height = createDto.Height ?? 512
+        };
+    }
+
+    public async Task<AIImageDto> SaveGeneratedAsync(
+    string userId,
+    SaveGeneratedImageDto dto,
+    CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Saving generated AI image to DB for user {UserId}", userId);
 
         var aiImage = new AiImage
         {
             AiImageId = Guid.NewGuid().ToString(),
             UserId = userId,
-            Prompt = createDto.Prompt,
-            NegativePrompt = createDto.NegativePrompt,
-            Style = createDto.Style,
-            Width = createDto.Width ?? 512,
-            Height = createDto.Height ?? 512,
-            Status = (int)AIImageStatus.Pending,
+            Prompt = dto.Prompt,
+            NegativePrompt = dto.NegativePrompt,
+            Style = dto.Style,
+            ImageUrl = dto.ImageUrl,
+            ThumbnailUrl = dto.ImageUrl,
+            Width = dto.Width,
+            Height = dto.Height,
+            Status = (int)AIImageStatus.Completed,
+            NanoBananaRequestId = dto.PredictionId,
             CreatedAt = DateTime.Now,
             UpdatedAt = DateTime.Now
         };
@@ -57,57 +108,7 @@ public class AIImageService : IAIImageService
         await _unitOfWork.AIImageRepository.AddAsync(aiImage, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        try
-        {
-            aiImage.Status = (int)AIImageStatus.Processing;
-
-            var result = await _replicateImageService.GenerateAsync(
-                createDto,
-                cancellationToken
-            );
-
-            var httpClient = _httpClientFactory.CreateClient("ExternalMedia");
-
-            var imageBytes = await httpClient.GetByteArrayAsync(
-                result.TemporaryImageUrl,
-                cancellationToken
-            );
-
-            var extension = Path.GetExtension(new Uri(result.TemporaryImageUrl).AbsolutePath)
-                    .TrimStart('.');
-
-            if (string.IsNullOrWhiteSpace(extension))
-            {
-                extension = "webp";
-            }
-
-            var permanentUrl = await _storageService.UploadImageByAI(
-                imageBytes,
-                userId,
-                extension,
-                cancellationToken
-            );
-
-            aiImage.ImageUrl = permanentUrl;
-            aiImage.ThumbnailUrl = permanentUrl;
-
-            // tạm dùng field cũ để lưu prediction id
-            aiImage.NanoBananaRequestId = result.PredictionId;
-
-            aiImage.Status = (int)AIImageStatus.Completed;
-            aiImage.UpdatedAt = DateTime.Now;
-
-            _logger.LogInformation("FLUX image success for user {UserId}", userId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "FLUX generation failed");
-
-            aiImage.Status = (int)AIImageStatus.Failed;
-            aiImage.ErrorMessage = ex.Message;
-            aiImage.UpdatedAt = DateTime.Now;
-        }
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("AI image saved to DB {ImageId} for user {UserId}", aiImage.AiImageId, userId);
 
         return MapToDto(aiImage);
     }

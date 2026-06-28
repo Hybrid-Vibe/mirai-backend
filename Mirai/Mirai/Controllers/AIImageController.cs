@@ -38,7 +38,25 @@ public class AIImageController : ControllerBase
     {
         var userId = GetCurrentUserId();
         var result = await _aiImageService.CreateAIImageAsync(userId, request, cancellationToken);
-        return CreatedAtAction(nameof(GetAIImageById), new { id = result.AIImageId }, result);
+        return CreatedAtAction(nameof(GetAIImageById), new { id = result.ImageUrl }, result);
+    }
+
+    [HttpPost("save-generated")]
+    public async Task<ActionResult<AIImageDto>> SaveGenerated(
+    [FromBody] SaveGeneratedImageDto request,
+    CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        var result = await _aiImageService.SaveGeneratedAsync(
+            userId,
+            request,
+            cancellationToken);
+
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
