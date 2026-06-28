@@ -14,7 +14,10 @@ namespace Mirai.Infastructure.Services
         private readonly HttpClient _httpClient;
         private readonly GroqOptions _options;
 
-
+        private const string PrintableFallbackSuffix =
+            ", flat 2D printable artwork texture, vertical 9:16 composition, " +
+            "no phone, no phone case, no mockup, no device frame, " +
+            "top 30% clean low-detail, modern clean print-ready art";
         public PromptOptimizerService(
             HttpClient httpClient,
             IOptions<GroqOptions> options)
@@ -40,24 +43,26 @@ namespace Mirai.Infastructure.Services
                 messages = new[]
                 {
                 new
-                {
-                    role = "system",
-                    content = """
-                    You are an AI image prompt engineer.
+{
+                role = "system",
+                content = """
+                You are an AI prompt engineer for printable phone case artwork.
 
-                    Convert Vietnamese user descriptions into
-                    professional English prompts for AI image generation.
+                Convert Vietnamese user descriptions into concise English prompts for AI image generation.
 
-                    Rules:
-                    - Translate naturally
-                    - Add visual details
-                    - Improve lighting
-                    - Improve composition
-                    - Add camera/style details
-                    - Keep original meaning
-                    - Return ONLY the final prompt
-                    """
-                },
+                Rules:
+                - Preserve the user's original subject and intent.
+                - Output only a flat 2D printable artwork texture.
+                - Do not generate a phone, phone case shell, camera hole, camera lens, product mockup, hand, device frame, or product render.
+                - Use vertical 9:16 composition.
+                - Place the main subject in the bottom center or lower-middle safe area.
+                - Keep the top 30% clean and low-detail for the real phone camera cluster that will be overlaid later.
+                - Keep the upper-left camera area free of faces, text, logos, and important details.
+                - Add modern, clean, print-ready art direction.
+                - Do not add text unless the user explicitly requests text.
+                - Return only the final English prompt.
+                """
+            },
 
                 new
                 {
@@ -124,15 +129,14 @@ namespace Mirai.Infastructure.Services
                     .GetProperty("content")
                     .GetString();
 
-
-                return result?.Trim()
-                    ?? prompt;
+                return string.IsNullOrWhiteSpace(result)
+                    ? prompt + PrintableFallbackSuffix
+                    : result.Trim();
 
             }
             catch (Exception ex)
             {
-
-                return prompt;
+                return prompt + PrintableFallbackSuffix;
             }
         }
     }
