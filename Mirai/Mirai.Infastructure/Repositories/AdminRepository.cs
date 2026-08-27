@@ -36,9 +36,9 @@ public class AdminRepository : IAdminRepository
             PendingOrders = await _context.Orders.CountAsync(
                 o => o.Status != null && pendingOrderStatuses.Contains((OrderStatus)o.Status),
                 cancellationToken),
-            TotalRevenue = await _context.Orders
-                .Where(o => o.PaymentStatus == (int)paidStatus)
-                .SumAsync(o => o.TotalAmount, cancellationToken),
+            TotalRevenue = await _context.Payments
+                .Where(p => p.Status == (int)paidStatus)
+                .SumAsync(p => p.Amount ?? 0, cancellationToken),
             TotalProducts = await _context.Products.CountAsync(cancellationToken),
             ActiveProducts = await _context.Products.CountAsync(p => p.IsActive, cancellationToken),
             PendingReviews = await _context.Reviews.CountAsync(r => !r.IsApproved, cancellationToken),
